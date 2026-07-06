@@ -20,7 +20,8 @@ const pugContent = fs.readFileSync(entryPug, 'utf-8')
 const data = {
   version: pack.version,
   siteName: pack.name,
-  isDev: false
+  isDev: false,
+  customUI: process.env.CUSTOM_UI === '1'
 }
 const htmlContent = pug.render(pugContent, {
   filename: entryPug,

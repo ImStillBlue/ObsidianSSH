@@ -154,5 +154,11 @@
       "requestAnimationFrame",
       "self"
     ]
+  },
+  "allowScripts": {
+    "electron@41.2.0": true,
+    "node-pty@1.1.0-beta34": true,
+    "@serialport/bindings-cpp@13.0.0": true,
+    "@electerm/ssh2@1.19.0": true
   }
 }

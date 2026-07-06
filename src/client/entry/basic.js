@@ -35,7 +35,8 @@ async function load () {
   }
   function loadScript () {
     const rcs = document.createElement('script')
-    const url = !isDev ? `js/electerm-${version}.js` : 'js/electerm.js'
+    const name = window.et.customUI ? 'custom-ui' : 'electerm'
+    const url = !isDev ? `js/${name}-${version}.js` : `js/${name}.js`
     rcs.src = url
     rcs.type = 'module'
     rcs.onload = () => {

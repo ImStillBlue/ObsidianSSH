@@ -117,6 +117,7 @@ dist
 /test-results
 
 ftp-root
+uploads
 *.asc
 /electron-builder.json
 

@@ -15,7 +15,8 @@ const h = `http://${host}:${devPort}`
 const base = {
   version: pack.version,
   isDev: !isProd,
-  siteName: pack.name
+  siteName: pack.name,
+  customUI: env.CUSTOM_UI === '1'
 }
 
 function handleIndex (req, res) {
@@ -32,6 +33,7 @@ function redirect (req, res) {
   } = req.params
   const mapper = {
     electerm: '/src/client/entry/electerm.jsx',
+    'custom-ui': '/src/client/entry/custom-ui.jsx',
     worker: '/src/client/entry/worker.js'
   }
   res.redirect(mapper[name])
