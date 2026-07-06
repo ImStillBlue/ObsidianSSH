@@ -7,9 +7,15 @@
  */
 import { createRoot } from 'react-dom/client'
 import 'antd/dist/reset.css'
-import CustomApp from '../components/custom-ui/app.jsx'
+import '@fontsource/maple-mono/index.css'
+import store from '../store'
+import '../common/fs.js'
+import CustomRoot from '../components/custom-ui/root.jsx'
+
+// Load-bearing: electerm's terminal/sftp/quick-command tree reads window.store.
+window.store = store
 
 const rootElement = createRoot(document.getElementById('container'))
 rootElement.render(
-  <CustomApp />
+  <CustomRoot />
 )

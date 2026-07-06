@@ -4,7 +4,7 @@
  * The window is frameless + transparent on Linux/Windows (see create-window.js),
  * so the UI must draw its own controls. Backend calls reuse the same bridge the
  * stock UI uses:
- *   window.pre.runGlobalAsync('minimize' | 'maximize' | 'unmaximize' | 'closeApp')
+ *   window.pre.runGlobalAsync('minimize' | 'maximize' | 'unmaximize')
  *   window.pre.runSync('isMaximized')
  * Dragging on Linux/Mac uses the CSS `-webkit-app-region: drag` region; electerm
  * only falls back to manual windowMove IPC on Windows, so we don't need it here.
@@ -77,7 +77,7 @@ export default function TopBar () {
   })
 
   const minimize = () => window.pre.runGlobalAsync('minimize')
-  const close = () => window.pre.runGlobalAsync('closeApp')
+  const close = () => window.store.exit()
   const toggleMax = () => {
     if (maximized) {
       window.pre.runGlobalAsync('unmaximize')

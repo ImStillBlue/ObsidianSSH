@@ -168,3 +168,221 @@
   background: var(--obs-accent);
   box-shadow: 0 0 8px var(--obs-accent);
 }
+
+/* ---- tab strip ---- */
+.cu-tabstrip {
+  display: flex;
+  align-items: stretch;
+  height: 34px;
+  min-height: 34px;
+  background: var(--obs-bg-darker);
+  border-bottom: 1px solid var(--obs-border);
+  -webkit-app-region: no-drag;
+}
+
+.cu-tabs {
+  display: flex;
+  align-items: stretch;
+  flex: 1;
+  overflow-x: auto;
+}
+
+.cu-tabs .tab {
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  max-width: 220px;
+  border-right: 1px solid var(--obs-border);
+  color: var(--obs-text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+  position: relative;
+  font-size: 12px;
+}
+
+.cu-tabs .tab.active-all {
+  background: var(--obs-bg);
+  color: var(--obs-text);
+}
+
+.cu-tabs .tab.active-all::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 2px;
+  background: var(--obs-primary);
+}
+
+.cu-tabs .tab-title {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cu-tabs .tab-count {
+  display: none;
+}
+
+.cu-tabs .tab-close {
+  margin-left: 8px;
+  opacity: 0.55;
+}
+
+.cu-tabs .tab-close:hover {
+  opacity: 1;
+  color: var(--obs-error);
+}
+
+.cu-tab-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  color: var(--obs-text-secondary);
+  cursor: pointer;
+}
+
+.cu-tab-add:hover {
+  color: var(--obs-text);
+  background: var(--obs-hover);
+}
+
+/* ---- workspace / terminals ---- */
+.cu-workspace {
+  flex: 1;
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.cu-term-pane {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.cu-term-pane.hide {
+  display: none;
+}
+
+/* ---- main layout: terminal + sidebar ---- */
+.cu-main {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.cu-sidebar {
+  width: 380px;
+  min-width: 380px;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--obs-border);
+  background: var(--obs-bg);
+}
+
+.cu-sidebar-sftp {
+  flex: 1 1 50%;
+  position: relative;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.cu-sftp-pane {
+  position: absolute;
+  inset: 0;
+  overflow: auto;
+}
+
+.cu-sftp-pane.hide {
+  display: none;
+}
+
+.cu-sidebar-macros {
+  flex: 1 1 50%;
+  min-height: 0;
+  border-top: 1px solid var(--obs-border);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---- macros panel ---- */
+.cu-macros {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.cu-macros-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--obs-border);
+}
+
+.cu-macros-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--obs-text-secondary);
+  white-space: nowrap;
+}
+
+.cu-macros-search {
+  flex: 1;
+}
+
+.cu-macros-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cu-macros-empty {
+  color: var(--obs-text-muted);
+  font-size: 12px;
+  padding: 10px;
+}
+
+.cu-macro {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 1px solid var(--obs-border);
+  border-radius: 8px;
+  background: var(--obs-card);
+  color: var(--obs-text);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.1s ease;
+}
+
+.cu-macro:hover {
+  border-color: var(--obs-primary);
+  background: var(--obs-hover);
+}
+
+.cu-macro:active {
+  transform: translateY(1px);
+}
+
+.cu-macro-name {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.cu-macro-labels {
+  font-size: 11px;
+  color: var(--obs-text-muted);
+}
