@@ -22,12 +22,14 @@ export default function CustomApp () {
     <div className='cu-root'>
       <TopBar />
       <div className='cu-body'>
-        <div className='cu-body-title'>Custom UI</div>
-        <div className='cu-body-sub'>
+        <div className='cu-title'>ObsidianSSH</div>
+        <div className='cu-sub'>Your terminal, reforged.</div>
+        <div className='cu-badge'>
+          <span className='cu-badge-dot' />
           electerm v{version} · {platform} · bridge {window.pre ? 'ready' : 'missing'}
         </div>
-        <div className='cu-body-hint'>
-          Top bar is live — drag it to move the window, and use the buttons to minimize / maximize / close.
+        <div className='cu-hint'>
+          Top bar is live — drag to move, buttons to minimize / maximize / close.
         </div>
       </div>
     </div>

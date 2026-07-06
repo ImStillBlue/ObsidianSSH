@@ -1,34 +1,83 @@
+/* Obsidian design system tokens (see OBSIDIAN_DESIGN_SYSTEM.md) */
+:root {
+  --obs-primary: #5865f2;
+  --obs-deep: #4752c4;
+  --obs-light: #7289da;
+  --obs-electric: #8b5fbf;
+  --obs-accent: #00d4aa;
+  --obs-error: #ed4245;
+
+  --obs-bg: #0c0e14;
+  --obs-bg-darker: #06080b;
+  --obs-card: #1a1d26;
+  --obs-hover: #232631;
+
+  --obs-text: #ffffff;
+  --obs-text-secondary: #b9bbbe;
+  --obs-text-muted: #72767d;
+
+  --obs-border: #2a2d38;
+
+  --obs-font: -apple-system, blinkmacsystemfont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif;
+}
+
+@keyframes obs-gradient-shift {
+  to { background-position: 200% center; }
+}
+
+@keyframes obs-fade-in-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .cu-root {
   position: fixed;
   inset: 0;
   display: flex;
   flex-direction: column;
-  background: #0b0b0f;
-  color: #e6e6e6;
-  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  background:
+    radial-gradient(ellipse at 50% -10%, rgba(88, 101, 242, 0.15) 0%, transparent 55%),
+    var(--obs-bg);
+  color: var(--obs-text);
+  font-family: var(--obs-font);
   overflow: hidden;
 }
 
-/* ---- top bar ---- */
 .cu-topbar {
-  height: 36px;
-  min-height: 36px;
+  height: 38px;
+  min-height: 38px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #16161c;
-  border-bottom: 1px solid #26262e;
+  background: rgba(12, 14, 20, 0.85);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(88, 101, 242, 0.12);
   -webkit-app-region: drag;
   user-select: none;
 }
 
-.cu-topbar-title {
+.cu-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   padding: 0 12px;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.3px;
-  color: #9a9aa6;
 }
+
+.cu-brand-mark {
+  width: 18px;
+  height: 18px;
+  display: block;
+  filter: drop-shadow(0 0 6px rgba(88, 101, 242, 0.5));
+}
+
+.cu-brand-name {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+}
+
+.cu-brand-name .obs { color: var(--obs-text); }
+.cu-brand-name .ssh { color: var(--obs-primary); }
 
 .cu-window-controls {
   display: flex;
@@ -40,7 +89,7 @@
   width: 46px;
   border: none;
   background: transparent;
-  color: #b8b8c0;
+  color: var(--obs-text-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -51,16 +100,16 @@
 }
 
 .cu-wc:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: #fff;
+  background: var(--obs-hover);
+  color: var(--obs-text);
 }
 
 .cu-wc:active {
-  background: rgba(255, 255, 255, 0.14);
+  background: #2b2f3d;
 }
 
 .cu-wc-close:hover {
-  background: #e81123;
+  background: var(--obs-error);
   color: #fff;
 }
 
@@ -68,27 +117,54 @@
   background: #f1707a;
 }
 
-/* ---- body (placeholder) ---- */
 .cu-body {
   flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 14px;
+  animation: obs-fade-in-up 0.6s ease both;
 }
 
-.cu-body-title {
-  font-size: 22px;
-  font-weight: 600;
+.cu-title {
+  font-size: 40px;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  background: linear-gradient(135deg, var(--obs-light), var(--obs-primary), var(--obs-electric));
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: obs-gradient-shift 3s ease infinite;
 }
 
-.cu-body-sub {
-  opacity: 0.7;
-  font-size: 13px;
+.cu-sub {
+  color: var(--obs-text-secondary);
+  font-size: 14px;
 }
 
-.cu-body-hint {
-  opacity: 0.45;
+.cu-hint {
+  color: var(--obs-text-muted);
   font-size: 12px;
+}
+
+.cu-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid var(--obs-border);
+  border-radius: 999px;
+  background: var(--obs-card);
+  color: var(--obs-text-secondary);
+  font-size: 12px;
+}
+
+.cu-badge-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--obs-accent);
+  box-shadow: 0 0 8px var(--obs-accent);
 }

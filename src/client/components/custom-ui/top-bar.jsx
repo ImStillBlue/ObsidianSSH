@@ -46,6 +46,27 @@ function CloseIcon () {
   )
 }
 
+function BrandMark () {
+  return (
+    <svg className='cu-brand-mark' viewBox='0 0 24 24' fill='none'>
+      <defs>
+        <linearGradient id='cu-obs-grad' x1='0' y1='0' x2='1' y2='1'>
+          <stop offset='0' stopColor='#7289da' />
+          <stop offset='0.5' stopColor='#5865f2' />
+          <stop offset='1' stopColor='#8b5fbf' />
+        </linearGradient>
+      </defs>
+      <path d='M12 1.5 L19.5 8 L15 22.5 L9 22.5 L4.5 8 Z' fill='url(#cu-obs-grad)' />
+      <path
+        d='M12 1.5 L12 22.5 M4.5 8 L12 11 L19.5 8 M9 22.5 L12 11 L15 22.5'
+        stroke='rgba(255, 255, 255, 0.28)'
+        strokeWidth='0.6'
+        fill='none'
+      />
+    </svg>
+  )
+}
+
 export default function TopBar () {
   const [maximized, setMaximized] = useState(() => {
     try {
@@ -85,8 +106,11 @@ export default function TopBar () {
 
   return (
     <div className='cu-topbar'>
-      <div className='cu-topbar-title'>
-        {window.et?.siteName || 'electerm'}
+      <div className='cu-brand'>
+        <BrandMark />
+        <span className='cu-brand-name'>
+          <span className='obs'>Obsidian</span><span className='ssh'>SSH</span>
+        </span>
       </div>
       {controls}
     </div>

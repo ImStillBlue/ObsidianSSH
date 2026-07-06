@@ -46,7 +46,9 @@ exports.createWindow = async function (userConfig) {
       spellcheck: false
     },
     titleBarStyle: useSystemTitleBar ? 'default' : 'hidden',
-    icon: iconPath
+    icon: process.env.CUSTOM_UI === '1'
+      ? resolve(__dirname, '../branding/obsidian.png')
+      : iconPath
   })
   // hides the traffic lights
   if (isMac) {
