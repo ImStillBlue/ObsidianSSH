@@ -187,7 +187,9 @@ export function shortcutExtend (Cls) {
       !altKey &&
       !ctrlKey
     ) {
-      this.props.onDelKeyPressed()
+      if (typeof this.props.onDelKeyPressed === 'function') {
+        this.props.onDelKeyPressed()
+      }
       const delKey = this.props.config.backspaceMode === '^?' ? 8 : 127
       const altDelDelKey = delKey === 8 ? 127 : 8
       const char = String.fromCharCode(shiftKey ? delKey : altDelDelKey)

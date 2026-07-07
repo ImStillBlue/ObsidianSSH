@@ -79,6 +79,40 @@
 .cu-brand-name .obs { color: var(--obs-text); }
 .cu-brand-name .ssh { color: var(--obs-primary); }
 
+.cu-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: auto;
+  padding: 0 6px;
+  -webkit-app-region: no-drag;
+}
+
+.cu-action {
+  width: 30px;
+  height: 26px;
+  border: none;
+  background: transparent;
+  color: var(--obs-text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 6px;
+  font-size: 15px;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.cu-action:hover {
+  background: var(--obs-hover);
+  color: var(--obs-text);
+}
+
+.cu-action.active {
+  color: var(--obs-primary);
+  background: rgba(88, 101, 242, 0.12);
+}
+
 .cu-window-controls {
   display: flex;
   align-self: stretch;
@@ -275,20 +309,334 @@
   min-height: 0;
 }
 
-.cu-sidebar {
+/* ---- Dock (rail + collapsible panel) ---- */
+.cu-dock {
+  position: relative;
+  display: flex;
+  min-height: 0;
+  flex: 0 0 auto;
+}
+
+.cu-panel {
+  display: flex;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.cu-panel > * {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 100%;
+}
+
+.cu-panel.cu-docked {
+  position: relative;
+  flex: 0 0 auto;
+  transition: width 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.cu-panel-left.cu-docked {
+  width: 300px;
+}
+
+.cu-panel-right.cu-docked {
   width: 380px;
-  min-width: 380px;
+}
+
+/* Collapsed → hidden overlay that slides in on dock hover (flyout) */
+.cu-panel.cu-flyout {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 60;
+  pointer-events: none;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+  transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.18s ease;
+  opacity: 0;
+}
+
+.cu-panel-left.cu-flyout {
+  left: 52px;
+  width: 300px;
+  transform: translateX(-14px);
+}
+
+.cu-panel-right.cu-flyout {
+  right: 0;
+  width: 380px;
+  transform: translateX(14px);
+}
+
+.cu-panel.cu-flyout.cu-flyout-open {
+  transform: translateX(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ---- Icon rails ---- */
+.cu-rail {
+  width: 52px;
+  min-width: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  background: var(--obs-bg-darker);
+  border-right: 1px solid var(--obs-border);
+  z-index: 61;
+}
+
+.cu-rail-r {
+  position: absolute;
+  left: -31px;
+  top: 0;
+  bottom: 0;
+  width: 34px;
+  min-width: 34px;
+  padding: 0;
+  justify-content: center;
+  background: transparent;
+  border-right: none;
+  border-left: none;
+  pointer-events: none;
+}
+
+.cu-dock-right {
+  flex: 0 0 12px;
+  width: 12px;
+}
+
+.cu-dock-right.cu-dock-open {
+  flex-basis: auto;
+  width: auto;
+}
+
+.cu-rail-r .cu-rail-top {
+  height: 100%;
+  justify-content: center;
+}
+
+.cu-edge-handle {
+  width: 24px;
+  height: 54px;
+  border: 1px solid rgba(88, 101, 242, 0.36);
+  border-radius: 999px;
+  background: rgba(26, 29, 38, 0.92);
+  color: var(--obs-text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 13px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.38);
+  pointer-events: auto;
+  transition: transform 0.16s ease, border-color 0.16s ease, background 0.16s ease, color 0.16s ease;
+}
+
+.cu-edge-handle:hover {
+  transform: scale(1.06);
+  border-color: var(--obs-primary);
+  background: var(--obs-hover);
+  color: var(--obs-text);
+}
+
+.cu-edge-handle:active {
+  transform: scale(0.96);
+}
+
+.cu-edge-handle.active {
+  border-color: var(--obs-primary);
+  background: rgba(88, 101, 242, 0.18);
+  color: var(--obs-primary);
+}
+
+.cu-rail-top,
+.cu-rail-bottom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.cu-rail-btn {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--obs-text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 19px;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.1s ease;
+}
+
+.cu-rail-btn:hover {
+  background: var(--obs-hover);
+  color: var(--obs-text);
+}
+
+.cu-rail-btn:active {
+  transform: scale(0.92);
+}
+
+.cu-rail-btn.active {
+  background: rgba(88, 101, 242, 0.14);
+  color: var(--obs-primary);
+}
+
+/* active-state accent pill on the rail's inner edge */
+.cu-rail-btn.active::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 20px;
+  border-radius: 0 3px 3px 0;
+  background: var(--obs-primary);
+}
+
+.cu-rail .cu-rail-btn.active::before {
+  left: -10px;
+}
+
+.cu-rail-r .cu-rail-btn.active::before {
+  left: auto;
+  right: -10px;
+  border-radius: 3px 0 0 3px;
+}
+
+.cu-bookmarks {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid var(--obs-border);
+  background: var(--obs-bg);
+  min-height: 0;
+}
+
+.cu-bookmarks-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--obs-border);
+}
+
+.cu-bookmarks-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--obs-text-secondary);
+}
+
+.cu-bookmarks-new {
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--obs-border);
+  border-radius: 6px;
+  background: var(--obs-card);
+  color: var(--obs-text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.cu-bookmarks-new:hover {
+  border-color: var(--obs-primary);
+  color: var(--obs-primary);
+  background: var(--obs-hover);
+}
+
+.cu-bookmarks-tree {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.cu-bookmarks-tree .tree-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.cu-bookmarks-tree .item-list-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.cu-sidebar {
+  width: 100%;
   display: flex;
   flex-direction: column;
   border-left: 1px solid var(--obs-border);
   background: var(--obs-bg);
 }
 
+.cu-sftp-toolbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 8px;
+  border-bottom: 1px solid var(--obs-border);
+  background: rgba(12, 14, 20, 0.72);
+}
+
+.cu-follow-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 30px;
+  border: 1px solid var(--obs-border);
+  border-radius: 8px;
+  background: var(--obs-card);
+  color: var(--obs-text-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.cu-follow-arrow {
+  font-size: 11px;
+  opacity: 0.68;
+}
+
+.cu-follow-btn:hover {
+  border-color: var(--obs-primary);
+  background: var(--obs-hover);
+  color: var(--obs-text);
+}
+
+.cu-follow-btn.active {
+  border-color: rgba(88, 101, 242, 0.72);
+  background: rgba(88, 101, 242, 0.16);
+  color: var(--obs-primary);
+}
+
 .cu-sidebar-sftp {
-  flex: 1 1 50%;
+  flex: 1 1 auto;
   position: relative;
   overflow: hidden;
-  min-height: 0;
+  min-height: 200px;
 }
 
 .cu-sftp-pane {
@@ -301,20 +649,80 @@
   display: none;
 }
 
-.cu-sidebar-macros {
-  flex: 1 1 50%;
+.cu-sidebar-sftp .sftp-panel,
+.cu-sidebar-sftp .sftp-table-content,
+.cu-sidebar-sftp .file-list {
+  background: transparent !important;
+}
+
+/* SFTP hardcodes scroll height as `height - 194` (list-table-ui.jsx) for a
+   footer the custom UI omits; flex-stretch the chain to reclaim that gap. */
+.cu-sidebar-sftp .sftp-section,
+.cu-sidebar-sftp .sftp-section > .ant-spin-nested-loading,
+.cu-sidebar-sftp .sftp-section > .ant-spin-nested-loading > .ant-spin-container,
+.cu-sidebar-sftp .sftp-panel,
+.cu-sidebar-sftp .file-list,
+.cu-sidebar-sftp .sftp-table {
+  display: flex;
+  flex-direction: column;
   min-height: 0;
+  height: 100%;
+}
+
+.cu-sidebar-sftp .file-list,
+.cu-sidebar-sftp .sftp-table {
+  flex: 1 1 auto;
+}
+
+.cu-sidebar-sftp .sftp-file-table-header,
+.cu-sidebar-sftp .sftp-panel-title,
+.cu-sidebar-sftp .sftp-title-wrap {
+  flex: 0 0 auto;
+}
+
+.cu-sidebar-sftp .sftp-table-content {
+  height: auto !important;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.cu-sidebar-sftp .sftp-table-content::-webkit-scrollbar {
+  width: 10px;
+}
+
+.cu-sidebar-sftp .sftp-table-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.cu-sidebar-sftp .sftp-table-content::-webkit-scrollbar-thumb {
+  background: var(--obs-border);
+  border-radius: 5px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.cu-sidebar-sftp .sftp-table-content::-webkit-scrollbar-thumb:hover {
+  background: var(--obs-text-muted);
+  background-clip: content-box;
+}
+
+.cu-sidebar-macros {
+  flex: 0 0 auto;
+  max-height: 60%;
+  min-height: 160px;
   border-top: 1px solid var(--obs-border);
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 /* ---- macros panel ---- */
 .cu-macros {
   display: flex;
   flex-direction: column;
-  height: 100%;
   min-height: 0;
+  height: 100%;
 }
 
 .cu-macros-head {
@@ -385,4 +793,222 @@
 .cu-macro-labels {
   font-size: 11px;
   color: var(--obs-text-muted);
+}
+
+.cu-folder {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--obs-border);
+  border-radius: 8px;
+  background: var(--obs-card);
+  color: var(--obs-text);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.1s ease;
+}
+
+.cu-folder:hover {
+  border-color: var(--obs-primary);
+  background: var(--obs-hover);
+}
+
+.cu-folder:active {
+  transform: translateY(1px);
+}
+
+.cu-folder-icon {
+  color: var(--obs-text-secondary);
+  font-size: 14px;
+}
+
+.cu-folder-name {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.cu-folder-count {
+  font-size: 11px;
+  color: var(--obs-text-muted);
+  background: var(--obs-bg);
+  border-radius: 10px;
+  padding: 1px 8px;
+  min-width: 22px;
+  text-align: center;
+}
+
+.cu-macros-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  color: var(--obs-text);
+  cursor: pointer;
+  padding: 2px 6px 2px 0;
+  border-radius: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 55%;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.cu-macros-back:hover {
+  color: var(--obs-primary);
+  background: var(--obs-hover);
+}
+
+.cu-macros-crumb {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---- Settings: cohesive Obsidian overlay (custom UI only, scoped to .cu-root) ---- */
+.cu-root .custom-drawer.setting-wrap {
+  top: 38px;
+  left: 0;
+}
+
+.cu-root .setting-wrap .custom-drawer-mask {
+  background: rgba(6, 8, 11, 0.6);
+}
+
+.cu-root .setting-wrap .custom-drawer-content-wrapper {
+  width: 100% !important;
+  background: var(--obs-bg);
+  box-shadow: none;
+  border-top: 1px solid var(--obs-border);
+}
+
+.cu-root .setting-wrap .alt-close-setting-wrap,
+.cu-root .setting-wrap .app-drag {
+  display: none;
+}
+
+.cu-root .setting-wrap .close-setting-wrap {
+  top: 14px;
+  right: 16px;
+  font-size: 20px;
+  color: var(--obs-text-secondary);
+}
+
+.cu-root .setting-wrap .close-setting-wrap:hover {
+  color: var(--obs-error);
+}
+
+.cu-root .setting-wrap .setting-tabs {
+  padding: 12px 56px 0 20px;
+}
+
+.cu-root .setting-wrap .setting-tabs .ant-tabs-nav {
+  margin-bottom: 0;
+}
+
+.cu-root .setting-wrap .setting-row {
+  top: 60px;
+}
+
+.cu-root .setting-wrap .setting-row-right {
+  top: 62px;
+}
+
+.cu-root .setting-wrap .setting-row-left {
+  background: var(--obs-bg);
+  border-right: 1px solid var(--obs-border);
+}
+
+.cu-root .setting-wrap .item-list-unit,
+.cu-root .setting-wrap .tree-item {
+  border-bottom: 1px solid var(--obs-border);
+}
+
+.cu-root .setting-wrap .item-list-wrap {
+  border-top: 1px solid var(--obs-border);
+}
+
+/* ---- SFTP address breadcrumb (custom UI) ---- */
+.sftp-bc {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  min-width: 0;
+}
+
+.sftp-bc-prefix {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+.sftp-bc-path {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  overflow-x: auto;
+  white-space: nowrap;
+  scrollbar-width: none;
+}
+
+.sftp-bc-path::-webkit-scrollbar {
+  height: 0;
+}
+
+.sftp-bc-seg-wrap {
+  display: inline-flex;
+  align-items: center;
+}
+
+.sftp-bc-sep {
+  color: var(--obs-text-muted);
+  padding: 0 1px;
+  user-select: none;
+}
+
+.sftp-bc-seg {
+  border: none;
+  background: transparent;
+  color: var(--obs-text-secondary);
+  cursor: pointer;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 12px;
+  line-height: 1.7;
+  white-space: nowrap;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.sftp-bc-seg:hover {
+  background: var(--obs-hover);
+  color: var(--obs-primary);
+}
+
+.sftp-bc-current {
+  color: var(--obs-text);
+  font-weight: 600;
+}
+
+.sftp-bc-edit {
+  border: none;
+  background: transparent;
+  color: var(--obs-text-muted);
+  cursor: pointer;
+  padding: 0 4px;
+  flex: 0 0 auto;
+}
+
+.sftp-bc-edit:hover {
+  color: var(--obs-primary);
+}
+
+.sftp-bc-suffix {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
 }

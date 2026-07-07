@@ -506,44 +506,46 @@ export default class SettingCommon extends Component {
           }, e('opacity'))
         }
 
-        <div className='pd2b'>
-          <span className='inline-title mg1r'>{e('uiThemes')}</span>
-          <Select
-            onChange={this.handleChangeTerminalTheme}
-            popupMatchSelectWidth={false}
-            value={theme}
-          >
-            {
-              terminalThemes
-                .filter(d => d.id && d.name && d.uiThemeConfig)
-                .map(l => {
-                  const { id, name, uiThemeConfig } = l
-                  const { main, text } = uiThemeConfig
-                  const isDark = isColorDark(main)
-                  const txt = isDark ? <MoonOutlined /> : <SunOutlined />
-                  const tag = (
-                    <Tag
-                      color={main}
-                      className='mg1l'
-                      variant='solid'
-                      style={
-                        {
-                          color: text
+        {!window.et?.customUI && (
+          <div className='pd2b'>
+            <span className='inline-title mg1r'>{e('uiThemes')}</span>
+            <Select
+              onChange={this.handleChangeTerminalTheme}
+              popupMatchSelectWidth={false}
+              value={theme}
+            >
+              {
+                terminalThemes
+                  .filter(d => d.id && d.name && d.uiThemeConfig)
+                  .map(l => {
+                    const { id, name, uiThemeConfig } = l
+                    const { main, text } = uiThemeConfig
+                    const isDark = isColorDark(main)
+                    const txt = isDark ? <MoonOutlined /> : <SunOutlined />
+                    const tag = (
+                      <Tag
+                        color={main}
+                        className='mg1l'
+                        variant='solid'
+                        style={
+                          {
+                            color: text
+                          }
                         }
-                      }
-                    >
-                      {txt}
-                    </Tag>
-                  )
-                  return (
-                    <Option key={id} value={id}>
-                      {tag} {name}
-                    </Option>
-                  )
-                })
-            }
-          </Select>
-        </div>
+                      >
+                        {txt}
+                      </Tag>
+                    )
+                    return (
+                      <Option key={id} value={id}>
+                        {tag} {name}
+                      </Option>
+                    )
+                  })
+              }
+            </Select>
+          </div>
+        )}
 
         <div className='pd2b'>
           <span className='inline-title mg1r'>{e('customCss')}</span>

@@ -106,10 +106,18 @@ export default auto(function SettingModalWrap (props) {
         children: null
       }
     ]
+    const cuTabs = new Set([
+      settingMap.bookmarks,
+      settingMap.setting,
+      settingMap.quickCommands
+    ])
+    const visibleItems = window.et?.customUI
+      ? items.filter(it => cuTabs.has(it.key))
+      : items
     const tabsProps = {
       activeKey: settingTab,
       animated: false,
-      items,
+      items: visibleItems,
       onChange: store.handleChangeSettingTab,
       destroyOnHidden: true,
       className: 'setting-tabs',

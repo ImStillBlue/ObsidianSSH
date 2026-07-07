@@ -78,11 +78,13 @@ exports.getWindowSizeDep = async () => {
     height: maxHeight
   } = exports.getScreenSize()
   if (!windowSizeLastState || isDev) {
+    const defaultWidth = Math.min(1440, maxWidth)
+    const defaultHeight = Math.min(900, maxHeight)
     return {
-      width: maxWidth,
-      height: maxHeight,
-      x: 0,
-      y: 0
+      width: defaultWidth,
+      height: defaultHeight,
+      x: Math.max(0, Math.floor((maxWidth - defaultWidth) / 2)),
+      y: Math.max(0, Math.floor((maxHeight - defaultHeight) / 2))
     }
   }
   const {

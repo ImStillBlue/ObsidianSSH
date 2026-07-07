@@ -62,6 +62,11 @@ export default Store => {
     refs.get('term-' + tid)?.runQuickCommand(cmd, inputOnly)
   }
 
+  Store.prototype.cdTerminal = function (path, tabId) {
+    const tid = tabId || window.store.activeTabId
+    refs.get('term-' + tid)?.cd(path)
+  }
+
   Store.prototype.runQuickCommandItem = debounce(async (id) => {
     const {
       store

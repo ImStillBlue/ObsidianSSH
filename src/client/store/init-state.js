@@ -201,6 +201,12 @@ export default () => {
     hideDelKeyTip: ls.getItem(dismissDelKeyTipLsKey) === 'y',
     tabsHeight: 36,
 
+    // custom UI (ObsidianSSH)
+    cuBookmarksOpen: true,
+    cuSidebarOpen: true,
+    cuSftpFollowTerminal: false,
+    cuTerminalFollowSftp: false,
+
     // widgets
     widgets: [],
     widgetInstances: [],

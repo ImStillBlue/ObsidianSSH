@@ -10,6 +10,7 @@
  * only falls back to manual windowMove IPC on Windows, so we don't need it here.
  */
 import { useState } from 'react'
+import { auto } from 'manate/react'
 
 const isMac = window.pre?.platform === 'darwin'
 
@@ -67,7 +68,7 @@ function BrandMark () {
   )
 }
 
-export default function TopBar () {
+export default auto(function TopBar () {
   const [maximized, setMaximized] = useState(() => {
     try {
       return !!window.pre?.runSync('isMaximized')
@@ -115,4 +116,4 @@ export default function TopBar () {
       {controls}
     </div>
   )
-}
+})

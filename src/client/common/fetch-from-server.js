@@ -35,7 +35,12 @@ const wsFetch = async (data) => {
   return new NewPromise((resolve, reject) => {
     window.et.commonWs.once((arg) => {
       if (arg.error) {
-        console.error('fetch error', arg.error)
+        const msg = arg.error.message || ''
+        if (msg.includes('ENOENT') || msg.includes('EACCES')) {
+          console.debug('fetch skipped', arg.error)
+        } else {
+          console.error('fetch error', arg.error)
+        }
         return reject(new Error(arg.error.message))
       }
       resolve(arg.data)

@@ -66,7 +66,7 @@ export default auto(function SessionHost (props) {
           config: store.config,
           themeConfig: copy(store.getThemeConfig()),
           sessionOptions: null,
-          sftpPathFollowSsh: true,
+          sftpPathFollowSsh: store.cuSftpFollowTerminal,
           broadcastInput: false,
           setCwd: cwd => setCwd(tab.id, cwd),
           editTab: (id, up) => store.updateTab(id, up),

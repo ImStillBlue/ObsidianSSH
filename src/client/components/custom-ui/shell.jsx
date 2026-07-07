@@ -16,6 +16,7 @@ import TerminalInteractive from '../terminal/terminal-interactive'
 import TermSearch from '../terminal/term-search'
 import TerminalCmdSuggestions from '../terminal/terminal-command-dropdown'
 import FileInfoModal from '../sftp/file-info-modal'
+import SettingModal from '../setting-panel/setting-modal'
 import ConfirmModalStore from '../file-transfer/conflict-resolve.jsx'
 import TransportsActionStore from '../file-transfer/transports-action-store.jsx'
 import Remote2RemoteHandlers from '../file-transfer/remote2remote-handlers.jsx'
@@ -52,9 +53,10 @@ export default auto(function CustomShell (props) {
   return (
     <ConfigProvider theme={store.uiThemeConfig}>
       <div className='cu-root'>
-        <TopBar />
+        <TopBar store={store} />
         <TabStrip store={store} />
         <Workspace store={store} />
+        <SettingModal store={store} />
         <InputContextMenu />
         <ShortcutControl config={store.config} />
         <TerminalInteractive />

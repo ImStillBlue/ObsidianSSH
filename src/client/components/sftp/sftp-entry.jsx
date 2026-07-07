@@ -99,6 +99,22 @@ export default class Sftp extends Component {
     ) {
       this.updateCwd(this.props.cwd)
     }
+    if (window.et?.customUI) {
+      if (
+        !prevProps.sftpPathFollowSsh &&
+        this.props.sftpPathFollowSsh &&
+        this.props.cwd
+      ) {
+        this.updateCwd(this.props.cwd)
+      }
+      if (this.props.onSftpPathChange) {
+        const t = this.shouldRenderRemote() ? typeMap.remote : typeMap.local
+        const key = t + 'Path'
+        if (prevState[key] !== this.state[key] && this.state[key]) {
+          this.props.onSftpPathChange(this.state[key])
+        }
+      }
+    }
   }
 
   componentWillUnmount () {
