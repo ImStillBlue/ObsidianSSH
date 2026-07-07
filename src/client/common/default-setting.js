@@ -73,7 +73,7 @@ export default {
   proxyAI: '',
   sessionLogPath: '',
   sshSftpSplitView: false,
-  showCmdSuggestions: false,
+  showCmdSuggestions: true,
   autoReconnectTerminal: false,
   startDirectoryLocal: '',
   allowMultiInstance: false,

@@ -1092,7 +1092,7 @@ class Term extends Component {
       }
       return
     }
-    if (this.props.config.showCmdSuggestions) {
+    if (this.props.config.showCmdSuggestions || window.et?.customUI) {
       const data = this.getCurrentInput()
       if (data && d !== '\r' && d !== '\n') {
         const cursorPos = this.getCursorPosition()
@@ -1297,7 +1297,7 @@ class Term extends Component {
 
   canInjectShellIntegration = () => {
     const { config } = this.props
-    const canInject = (config.showCmdSuggestions || this.props.sftpPathFollowSsh) &&
+    const canInject = (config.showCmdSuggestions || this.props.sftpPathFollowSsh || window.et?.customUI) &&
     (
       this.isSsh() ||
       (this.isLocal() && !isWin)

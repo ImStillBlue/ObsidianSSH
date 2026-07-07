@@ -1,7 +1,7 @@
 import React from 'react'
 import { CloseCircleOutlined } from '@ant-design/icons'
 
-const SuggestionItem = ({ item, onSelect, onDelete }) => {
+const SuggestionItem = ({ item, onSelect, onDelete, selected }) => {
   const handleClick = () => {
     onSelect(item)
   }
@@ -17,7 +17,7 @@ const SuggestionItem = ({ item, onSelect, onDelete }) => {
     : item.command
 
   return (
-    <div className='suggestion-item' onClick={handleClick}>
+    <div className={selected ? 'suggestion-item selected' : 'suggestion-item'} onClick={handleClick}>
       <span className='suggestion-command'>
         {displayText}
       </span>

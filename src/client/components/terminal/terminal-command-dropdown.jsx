@@ -17,7 +17,9 @@ export default class TerminalCmdSuggestions extends Component {
     cmdIsDescription: false,
     reverse: false,
     cmd: '',
-    passwordMode: false
+    passwordMode: false,
+    selectedIndex: -1,
+    rawCursorPosition: null
   }
 
   componentDidMount () {
@@ -103,7 +105,7 @@ export default class TerminalCmdSuggestions extends Component {
     }
     if (!this.state.showSuggestions) {
       document.addEventListener('click', this.handleClickOutside)
-      document.addEventListener('keydown', this.handleKeyDown)
+      document.addEventListener('keydown', this.handleKeyDown, true)
     }
 
     const {
@@ -135,14 +137,16 @@ export default class TerminalCmdSuggestions extends Component {
       cursorPosition: position,
       cmd,
       reverse,
-      passwordMode: false
+      passwordMode: false,
+      selectedIndex: -1,
+      rawCursorPosition: { left, top, cellHeight }
     })
   }
 
   openPasswordSuggestions = (cursorPosition) => {
     if (!this.state.showSuggestions) {
       document.addEventListener('click', this.handleClickOutside)
-      document.addEventListener('keydown', this.handleKeyDown)
+      document.addEventListener('keydown', this.handleKeyDown, true)
     }
 
     const {
@@ -178,7 +182,7 @@ export default class TerminalCmdSuggestions extends Component {
 
   closeSuggestions = () => {
     document.removeEventListener('click', this.handleClickOutside)
-    document.removeEventListener('keydown', this.handleKeyDown)
+    document.removeEventListener('keydown', this.handleKeyDown, true)
     const {
       aiSuggestions
     } = this.state
@@ -191,7 +195,9 @@ export default class TerminalCmdSuggestions extends Component {
     this.setState({
       showSuggestions: false,
       aiSuggestions: [],
-      passwordMode: false
+      passwordMode: false,
+      selectedIndex: -1,
+      rawCursorPosition: null
     })
   }
 
@@ -202,9 +208,50 @@ export default class TerminalCmdSuggestions extends Component {
     }
   }
 
+  scrollSelectedIntoView = () => {
+    const el = document.querySelector('.suggestion-item.selected')
+    if (el) {
+      el.scrollIntoView({ block: 'nearest' })
+    }
+  }
+
   handleKeyDown = (event) => {
+    const { passwordMode } = this.state
+    const suggestions = passwordMode ? this.getPasswordSuggestions() : this.getSuggestions()
+    const len = suggestions.length
+
     if (event.key === 'Escape') {
+      event.preventDefault()
+      event.stopPropagation()
       this.closeSuggestions()
+      return
+    }
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault()
+      event.stopPropagation()
+      this.setState(prev => ({
+        selectedIndex: prev.selectedIndex < len - 1 ? prev.selectedIndex + 1 : 0
+      }), this.scrollSelectedIntoView)
+      return
+    }
+
+    if (event.key === 'ArrowUp') {
+      event.preventDefault()
+      event.stopPropagation()
+      this.setState(prev => ({
+        selectedIndex: prev.selectedIndex > 0 ? prev.selectedIndex - 1 : len - 1
+      }), this.scrollSelectedIntoView)
+      return
+    }
+
+    if (event.key === 'Tab') {
+      event.preventDefault()
+      event.stopPropagation()
+      const idx = this.state.selectedIndex >= 0 ? this.state.selectedIndex : 0
+      if (suggestions[idx]) {
+        this.handleSelect(suggestions[idx])
+      }
     }
   }
 
@@ -311,6 +358,38 @@ export default class TerminalCmdSuggestions extends Component {
     return this.state.reverse ? res.reverse() : res
   }
 
+  getGhostText () {
+    const { rawCursorPosition, passwordMode, cmd, selectedIndex } = this.state
+    if (!rawCursorPosition || passwordMode || !cmd) return null
+    const suggestions = this.getSuggestions()
+    const idx = selectedIndex >= 0 ? selectedIndex : 0
+    const top = suggestions[idx]
+    if (!top || !top.command.startsWith(cmd)) return null
+    return top.command.slice(cmd.length)
+  }
+
+  renderGhostText (ghostText) {
+    const { rawCursorPosition } = this.state
+    if (!ghostText || !rawCursorPosition) return null
+    const { left, top, cellHeight } = rawCursorPosition
+    const config = window.store?.config || {}
+    const style = {
+      position: 'fixed',
+      left,
+      top: top - cellHeight,
+      height: cellHeight,
+      lineHeight: cellHeight + 'px',
+      fontSize: (config.fontSize || 14) + 'px',
+      fontFamily: config.fontFamily || 'monospace',
+      letterSpacing: (config.letterSpacing || 0) + 'px',
+      pointerEvents: 'none',
+      color: 'rgba(180,180,200,0.4)',
+      whiteSpace: 'pre',
+      zIndex: 99
+    }
+    return <div className='terminal-ghost-text' style={style}>{ghostText}</div>
+  }
+
   renderAIIcon () {
     const e = window.translate
     const {
@@ -353,8 +432,9 @@ export default class TerminalCmdSuggestions extends Component {
 
   render () {
     const { showSuggestions, cursorPosition, reverse, passwordMode } = this.state
+    const ghostText = this.getGhostText()
     if (!showSuggestions) {
-      return null
+      return this.renderGhostText(ghostText)
     }
     const suggestions = passwordMode
       ? this.getPasswordSuggestions()
@@ -363,24 +443,28 @@ export default class TerminalCmdSuggestions extends Component {
       reverse
     })
     return (
-      <div className={cls} style={cursorPosition}>
-        {!passwordMode && this.renderSticky('top')}
-        <div className='terminal-suggestions-list'>
-          {
-            suggestions.map(item => {
-              return (
-                <SuggestionItem
-                  key={item.id}
-                  item={item}
-                  onSelect={this.handleSelect}
-                  onDelete={this.handleDelete}
-                />
-              )
-            })
-          }
+      <>
+        {this.renderGhostText(ghostText)}
+        <div className={cls} style={cursorPosition}>
+          {!passwordMode && this.renderSticky('top')}
+          <div className='terminal-suggestions-list'>
+            {
+              suggestions.map((item, index) => {
+                return (
+                  <SuggestionItem
+                    key={item.id}
+                    item={item}
+                    onSelect={this.handleSelect}
+                    onDelete={this.handleDelete}
+                    selected={index === this.state.selectedIndex}
+                  />
+                )
+              })
+            }
+          </div>
+          {!passwordMode && this.renderSticky('bottom')}
         </div>
-        {!passwordMode && this.renderSticky('bottom')}
-      </div>
+      </>
     )
   }
 }
