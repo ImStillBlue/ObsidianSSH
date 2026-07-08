@@ -46,13 +46,13 @@ const {
   getPendingDeepLink
 } = require('./deep-link')
 const {
-  packInfo,
   appPath,
   isMac,
   exePath,
   isPortable,
   sshKeysPath
 } = require('../common/app-props')
+const { appName } = require('../common/app-name')
 const {
   getScreenSize,
   maximize,
@@ -206,7 +206,7 @@ function initIpc () {
     stopStream,
     setTitle: (title) => {
       const win = globalState.get('win')
-      win && win.setTitle(packInfo.name + ' - ' + title)
+      win && win.setTitle(appName + ' - ' + title)
     },
     setBackgroundColor: (color = '#33333300') => {
       const win = globalState.get('win')

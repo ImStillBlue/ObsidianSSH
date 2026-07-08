@@ -7,9 +7,7 @@ const {
   Notification
 } = require('electron')
 const globalState = require('./glob-state')
-const {
-  packInfo
-} = require('../common/runtime-constants')
+const { appName } = require('../common/app-name')
 const buildMenu = require('./menu')
 
 function capitalizeFirstLetter (string) {
@@ -38,7 +36,7 @@ function initApp (langMap, config) {
     globalState.set('timer', setTimeout(() => globalState.get('win').minimize(), 500))
     if (Notification.isSupported()) {
       const notice = new Notification({
-        title: `${packInfo.name} ${e('isRunning')}, ${e('press')} ${config.hotkey} ${e('toShow')}`
+        title: `${appName} ${e('isRunning')}, ${e('press')} ${config.hotkey} ${e('toShow')}`
       })
       notice.show()
     }

@@ -6,6 +6,7 @@ const {
   isDev, packInfo, iconPath, isMac,
   minWindowWidth, minWindowHeight
 } = require('../common/runtime-constants')
+const { appName } = require('../common/app-name')
 const defaults = require('../common/default-setting')
 const {
   getWindowState,
@@ -33,7 +34,7 @@ exports.createWindow = async function (userConfig) {
     fullscreenable: true,
     minWidth: minWindowWidth,
     minHeight: minWindowHeight,
-    title: packInfo.name,
+    title: appName,
     frame: useSystemTitleBar,
     transparent: !useSystemTitleBar,
     backgroundColor: '#333333',

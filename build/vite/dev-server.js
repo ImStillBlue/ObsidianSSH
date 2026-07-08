@@ -1,5 +1,5 @@
 import logger from 'morgan'
-import { viewPath, env, staticPaths, pack, isProd, cwd } from './common.js'
+import { viewPath, env, staticPaths, pack, isProd, cwd, appName } from './common.js'
 import express from 'express'
 import { createServer as createViteServer } from 'vite'
 import conf from './conf.js'
@@ -15,7 +15,7 @@ const h = `http://${host}:${devPort}`
 const base = {
   version: pack.version,
   isDev: !isProd,
-  siteName: pack.name,
+  siteName: appName,
   customUI: env.CUSTOM_UI === '1'
 }
 

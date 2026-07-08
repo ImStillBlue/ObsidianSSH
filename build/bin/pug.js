@@ -7,6 +7,7 @@ const pug = require('pug')
 const { resolve } = require('path')
 const pack = require('../../package.json')
 const deepCopy = require('json-deep-copy')
+const { appName } = require('../../src/app/common/app-name')
 
 const entryPug = resolve(
   __dirname,
@@ -19,7 +20,7 @@ const targetFilePath = resolve(
 const pugContent = fs.readFileSync(entryPug, 'utf-8')
 const data = {
   version: pack.version,
-  siteName: pack.name,
+  siteName: appName,
   isDev: false,
   customUI: process.env.CUSTOM_UI === '1'
 }
