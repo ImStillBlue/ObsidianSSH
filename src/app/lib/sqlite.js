@@ -98,6 +98,8 @@ function createDb (appPath, defaultUserName, { enc, dec } = {}) {
   function toDoc (row, dbName) {
     if (!row) return null
     const shouldDec = dec && shouldEncForRow(dbName, row._id)
+    // null means the value is encrypted but the OS keyring is unavailable;
+    // safe-storage already warned once, so just return an empty doc
     const raw = shouldDec ? decryptData(row.data) : row.data
     let r = {}
     try {
