@@ -8,8 +8,8 @@ const {
 } = require('../common/runtime-constants')
 const defaults = require('../common/default-setting')
 const {
-  getWindowSize,
-  setWindowPos
+  getWindowState,
+  saveWindowState
 } = require('./window-control')
 const { onClose } = require('./on-close')
 const { initIpc, initAppServer } = require('./ipc')
@@ -22,13 +22,14 @@ const webviewHandler = require('./webview-handler')
 exports.createWindow = async function (userConfig) {
   globalState.set('closeAction', 'closeApp')
   globalState.set('requireAuth', !!userConfig.hashedPassword)
-  const { width, height, x, y } = await getWindowSize()
+  const { width, height, x, y, isMaximized } = await getWindowState()
   const { useSystemTitleBar = defaults.useSystemTitleBar } = userConfig
   const win = new BrowserWindow({
     width,
     height,
     x,
     y,
+    show: false,
     fullscreenable: true,
     minWidth: minWindowWidth,
     minHeight: minWindowHeight,
@@ -74,32 +75,22 @@ exports.createWindow = async function (userConfig) {
     const dataUrl = `data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`
     win.loadURL(dataUrl)
   })
+  win.once('ready-to-show', () => {
+    if (isMaximized) {
+      win.maximize()
+    }
+    win.show()
+  })
   win.loadURL(opts)
   win.webContents.once('dom-ready', () => {
     if (isDev && !userConfig.disableDeveloperTool) {
       win.webContents.openDevTools()
     }
-    win.on('unmaximize', () => {
-      const { width, height } = win.getBounds()
-      if (width < minWindowWidth || height < minWindowHeight) {
-        win.setBounds({
-          x: 0,
-          y: 0,
-          width: minWindowWidth,
-          height: minWindowHeight
-        })
-        win.center()
-      }
-    })
-    win.on('resize', _.debounce(() => {
-      if (!win.isMaximized()) {
-        globalState.set('oldRectangle', win.getBounds())
-      }
-    }, 200))
-    win.on('move', _.debounce(() => {
-      const { x, y } = win.getBounds()
-      setWindowPos({ x, y })
-    }, 100))
+    const saveState = _.debounce(() => saveWindowState(win), 300)
+    win.on('resize', saveState)
+    win.on('move', saveState)
+    win.on('maximize', saveState)
+    win.on('unmaximize', saveState)
 
     win.on('focus', () => {
       win.webContents.send('focused', null)
@@ -109,5 +100,6 @@ exports.createWindow = async function (userConfig) {
     })
     disableShortCuts(win)
   })
+  win.on('close', () => saveWindowState(win))
   win.on('close', onClose)
 }

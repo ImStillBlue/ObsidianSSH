@@ -15,25 +15,12 @@ const os = require('os')
 const {
   isTest
 } = require('../common/app-props')
-const {
-  getScreenSize
-} = require('./window-control')
 const _ = require('./lodash.js')
 const { getStorageKey } = require('./storage-key')
 
 const isMaximized = () => {
-  const {
-    width: widthMax,
-    height: heightMax,
-    x: sx,
-    y: sy
-  } = getScreenSize()
   const win = globalState.get('win')
-  const { width, height, x, y } = win.getBounds()
-  return widthMax === width &&
-    heightMax === height &&
-    x === sx &&
-    y === sy
+  return !!win && win.isMaximized()
 }
 
 module.exports = {

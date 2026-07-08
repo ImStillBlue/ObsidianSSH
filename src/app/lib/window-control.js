@@ -1,15 +1,15 @@
 /**
- * manage window size save read and set
+ * manage window state (bounds + maximized) save/restore
  */
 
 const lastStateManager = require('./last-state')
 const {
-  isDev,
   minWindowWidth,
-  minWindowHeight,
-  isLinux
+  minWindowHeight
 } = require('../common/runtime-constants')
 const globalState = require('./glob-state')
+
+const WINDOW_STATE_KEY = 'windowState'
 
 exports.getScreenCurrent = () => {
   const rect = globalState.get('win')
@@ -34,95 +34,77 @@ exports.getScreenSize = () => {
 }
 
 exports.maximize = () => {
-  const win = globalState.get('win')
-  globalState.set('oldRectangle', win.getBounds())
-  win.maximize()
+  globalState.get('win').maximize()
 }
 
 exports.unmaximize = () => {
-  const oldRectangle = globalState.get('oldRectangle') || {
-    width: minWindowWidth,
-    height: minWindowHeight,
-    x: 200,
-    y: 200
-  }
   globalState.get('win').unmaximize()
-  globalState.get('win').setBounds(oldRectangle)
 }
 
-exports.getWindowSize = async () => {
-  const rect = await exports.getWindowSizeDep()
-  if (!isLinux) {
-    return rect
-  }
-  const {
-    width,
-    height
-  } = exports.getScreenSize()
-  if (rect.width >= width - 200) {
-    rect.width = width - 200
-    rect.x = 100
-  }
-  if (rect.height >= height - 200) {
-    rect.height = height - 200
-    rect.y = 100
-  }
-  return rect
+// A saved position is only reusable if it is still visible on some
+// currently-connected display (monitors get unplugged, resolutions change)
+function boundsVisibleOnSomeDisplay (bounds) {
+  const { screen } = require('electron')
+  return screen.getAllDisplays().some(display => {
+    const area = display.workArea
+    // require a reasonable overlap, not just a 1px touch
+    const overlapW = Math.min(bounds.x + bounds.width, area.x + area.width) -
+      Math.max(bounds.x, area.x)
+    const overlapH = Math.min(bounds.y + bounds.height, area.y + area.height) -
+      Math.max(bounds.y, area.y)
+    return overlapW >= 100 && overlapH >= 100
+  })
 }
 
-exports.getWindowSizeDep = async () => {
-  const windowSizeLastState = await lastStateManager.get('windowSize')
-  const windowPosLastState = await lastStateManager.get('windowPos')
-  const {
-    width: maxWidth,
-    height: maxHeight
-  } = exports.getScreenSize()
-  if (!windowSizeLastState || isDev) {
-    const defaultWidth = Math.min(1440, maxWidth)
-    const defaultHeight = Math.min(900, maxHeight)
-    return {
-      width: defaultWidth,
-      height: defaultHeight,
-      x: Math.max(0, Math.floor((maxWidth - defaultWidth) / 2)),
-      y: Math.max(0, Math.floor((maxHeight - defaultHeight) / 2))
-    }
-  }
-  const {
-    innerWidth,
-    height,
-    screenHeight,
-    screenWidth
-  } = windowSizeLastState
-  const fw = innerWidth / screenWidth
-  const fh = height / screenHeight
-  let w = maxWidth * fw
-  let h = maxHeight * fh
-  const minW = minWindowWidth
-  const minH = minWindowHeight
-  if (w < minW) {
-    w = minW
-  }
-  if (h < minH) {
-    h = minH
-  }
-  let {
-    x = 0,
-    y = 0
-  } = windowPosLastState || {}
-  if (x < 0 || x > maxWidth - 100) {
-    x = 0
-  }
-  if (y < 0 || y > maxHeight - 100) {
-    y = 0
-  }
+function defaultWindowState () {
+  const { screen } = require('electron')
+  const { workArea } = screen.getPrimaryDisplay()
+  const width = Math.min(1440, workArea.width)
+  const height = Math.min(900, workArea.height)
   return {
-    width: w,
-    height: h,
-    x,
-    y
+    width,
+    height,
+    x: workArea.x + Math.floor((workArea.width - width) / 2),
+    y: workArea.y + Math.floor((workArea.height - height) / 2),
+    isMaximized: false
   }
 }
 
-exports.setWindowPos = (pos) => {
-  lastStateManager.set('windowPos', pos)
+exports.getWindowState = async () => {
+  const saved = await lastStateManager.get(WINDOW_STATE_KEY)
+  if (
+    !saved ||
+    typeof saved.width !== 'number' ||
+    typeof saved.height !== 'number' ||
+    typeof saved.x !== 'number' ||
+    typeof saved.y !== 'number'
+  ) {
+    return defaultWindowState()
+  }
+  const state = {
+    width: Math.max(minWindowWidth, Math.round(saved.width)),
+    height: Math.max(minWindowHeight, Math.round(saved.height)),
+    x: Math.round(saved.x),
+    y: Math.round(saved.y),
+    isMaximized: !!saved.isMaximized
+  }
+  if (!boundsVisibleOnSomeDisplay(state)) {
+    const def = defaultWindowState()
+    def.isMaximized = state.isMaximized
+    return def
+  }
+  return state
+}
+
+exports.saveWindowState = (win) => {
+  if (!win || win.isDestroyed() || win.isMinimized() || win.isFullScreen()) {
+    return
+  }
+  // getNormalBounds returns the un-maximized bounds even while maximized,
+  // so restoring from maximized keeps the previous normal size too
+  const bounds = win.getNormalBounds()
+  return lastStateManager.set(WINDOW_STATE_KEY, {
+    ...bounds,
+    isMaximized: win.isMaximized()
+  })
 }

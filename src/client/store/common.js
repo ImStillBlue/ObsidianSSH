@@ -65,10 +65,6 @@ export default Store => {
       isMaximized
     }
     window.store.storeAssign(update)
-    window.pre.runGlobalAsync('setWindowSize', {
-      ...update,
-      height: window.outerHeight
-    })
   }, 100, {
     leading: true
   })

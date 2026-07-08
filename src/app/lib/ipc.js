@@ -39,7 +39,6 @@ const {
 } = require('./locales')
 const { saveUserConfig } = require('./user-config-controller')
 const { changeHotkeyReg, initShortCut } = require('./shortcut')
-const lastStateManager = require('./last-state')
 const {
   registerDeepLink,
   unregisterDeepLink,
@@ -199,9 +198,6 @@ function initIpc () {
     unmaximize,
     openDevTools: () => {
       globalState.get('win').webContents.openDevTools()
-    },
-    setWindowSize: (update) => {
-      lastStateManager.set('windowSize', update)
     },
     saveUserConfig,
     AIchat,
