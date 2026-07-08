@@ -80,6 +80,15 @@ exports.createWindow = async function (userConfig) {
       win.maximize()
     }
     win.show()
+    if (!isMaximized) {
+      // some window managers (e.g. KWin) discard the position requested at
+      // creation when the window is shown; re-apply it after placement settles
+      setTimeout(() => {
+        if (!win.isDestroyed() && !win.isMaximized()) {
+          win.setBounds({ x, y, width, height })
+        }
+      }, 150)
+    }
   })
   win.loadURL(opts)
   win.webContents.once('dom-ready', () => {

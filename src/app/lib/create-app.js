@@ -69,6 +69,25 @@ process.on('uncaughtException', (error) => {
 })
 
 exports.createApp = async function () {
+  // Native Wayland windows cannot save/restore their own screen position
+  // (the compositor owns placement, and Electron can't even read the real
+  // position), so run on X11/XWayland where geometry restore works.
+  // appendSwitch is too late for ozone-platform — it must be on the real
+  // command line — so relaunch once with the flag on Wayland sessions.
+  // Set ELECTRON_OZONE_PLATFORM_HINT to opt out (e.g. =auto for wayland).
+  if (
+    process.platform === 'linux' &&
+    process.env.WAYLAND_DISPLAY &&
+    process.env.DISPLAY && // XWayland must be present to fall back to
+    !process.env.ELECTRON_OZONE_PLATFORM_HINT &&
+    !process.argv.some(a => a.startsWith('--ozone-platform'))
+  ) {
+    app.relaunch({
+      args: process.argv.slice(1).concat('--ozone-platform=x11')
+    })
+    app.exit(0)
+    return app
+  }
   app.setName(packInfo.name)
   // Set desktop name so Linux taskbars (e.g. UOS/Deepin dde-dock) can match
   // the window to the .desktop file embedded in the AppImage.
