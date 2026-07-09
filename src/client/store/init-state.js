@@ -204,7 +204,7 @@ export default () => {
     // custom UI (ObsidianSSH)
     cuBookmarksOpen: true,
     cuSidebarOpen: true,
-    cuSftpFollowTerminal: false,
+    cuSftpFollowTerminal: true,
     cuTerminalFollowSftp: false,
 
     // widgets

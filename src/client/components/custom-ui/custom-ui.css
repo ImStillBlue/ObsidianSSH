@@ -219,11 +219,22 @@
   align-items: stretch;
   flex: 1;
   overflow-x: auto;
+  /* stock .tab line-height (36px) overflows the 34px strip; overflow-x auto
+     forces overflow-y auto, which spawned a blue scrollbar thumb on the bar */
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.cu-tabs::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 .cu-tabs .tab {
   display: flex;
   align-items: center;
+  line-height: normal;
   padding: 0 10px;
   max-width: 220px;
   border-right: 1px solid var(--obs-border);
@@ -655,9 +666,37 @@
   background: transparent !important;
 }
 
+/* Connected sessions render local + remote panes side by side (sftp-entry
+   splits its width in half inline) — too narrow for the sidebar. Show a
+   single pane: remote when connected, local otherwise. Inline width/height
+   from renderSections need !important. */
+.cu-sidebar-sftp .sftp-wrap {
+  display: flex;
+  flex-direction: column;
+  height: 100% !important;
+}
+
+.cu-sidebar-sftp .sftp-section {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100% !important;
+  height: auto !important;
+}
+
+.cu-sidebar-sftp .sftp-wrap:has(.sftp-remote-section) .sftp-local-section {
+  display: none;
+}
+
+.cu-sidebar-sftp .sftp-panel-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* SFTP hardcodes scroll height as `height - 194` (list-table-ui.jsx) for a
    footer the custom UI omits; flex-stretch the chain to reclaim that gap. */
-.cu-sidebar-sftp .sftp-section,
 .cu-sidebar-sftp .sftp-section > .ant-spin-nested-loading,
 .cu-sidebar-sftp .sftp-section > .ant-spin-nested-loading > .ant-spin-container,
 .cu-sidebar-sftp .sftp-panel,
