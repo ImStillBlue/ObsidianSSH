@@ -48,7 +48,7 @@ exports.createWindow = async function (userConfig) {
       spellcheck: false
     },
     titleBarStyle: useSystemTitleBar ? 'default' : 'hidden',
-    icon: process.env.CUSTOM_UI === '1'
+    icon: require('../common/custom-ui-flag')
       ? resolve(__dirname, '../branding/obsidian.png')
       : iconPath
   })

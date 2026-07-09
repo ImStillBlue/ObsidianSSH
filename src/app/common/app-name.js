@@ -14,6 +14,7 @@
  * Gated on CUSTOM_UI so the stock electerm build is untouched, matching the
  * existing icon/bundle branding toggle (create-window.js, pug.js, dev-server.js).
  */
-const appName = process.env.CUSTOM_UI === '1' ? 'ObsidianSSH' : 'electerm'
+const isCustomUI = require('./custom-ui-flag')
+const appName = isCustomUI ? 'ObsidianSSH' : 'electerm'
 
 module.exports = { appName }
