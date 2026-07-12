@@ -1,9 +1,6 @@
 /**
  * constants
  */
-import logoPath1Ref from '@electerm/electerm-resource/res/imgs/electerm-round-128x128.png'
-import logoPath2Ref from '@electerm/electerm-resource/res/imgs/electerm.png'
-import logoPath3Ref from '@electerm/electerm-resource/res/imgs/electerm-watermark.png'
 export const packInfo = typeof window.et.packInfo === 'undefined' ? window.pre.packInfo : window.et.packInfo
 const buildConst = (props) => {
   return props.reduce((prev, key) => {
@@ -14,9 +11,12 @@ const buildConst = (props) => {
   }, {})
 }
 
-export const logoPath1 = logoPath1Ref.replace(/^\//, '')
-export const logoPath2 = logoPath2Ref.replace(/^\//, '')
-export const logoPath3 = logoPath3Ref.replace(/^\//, '')
+// These assets are copied to the packaged app and exposed by the dev server.
+// Stable URLs avoid Vite turning dependency image imports into
+// `/images/undefined` during development dependency optimization.
+export const logoPath1 = 'images/electerm-round-128x128.png'
+export const logoPath2 = 'images/electerm.png'
+export const logoPath3 = 'images/electerm-watermark.png'
 export const maxEditFileSize = 1024 * 3000
 export const defaultBookmarkGroupId = 'default'
 export const newBookmarkIdPrefix = 'new-bookmark'

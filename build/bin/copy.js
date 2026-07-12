@@ -8,6 +8,10 @@ const from0 = resolve(
   __dirname,
   '../../node_modules/electerm-icons/icons'
 )
+const obsidianLogo = resolve(
+  __dirname,
+  '../../src/app/branding/obsidian-256.png'
+)
 const to1 = resolve(
   __dirname,
   '../../work/app/assets/images/'
@@ -19,6 +23,10 @@ const to2 = resolve(
 const arr = [
   {
     from,
+    to: to1,
+    file: true
+  }, {
+    from: obsidianLogo,
     to: to1,
     file: true
   }, {

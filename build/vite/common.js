@@ -18,6 +18,10 @@ export const { appName } = require('../../src/app/common/app-name.js')
 export const viewPath = resolve(cwd, '../../src/client/views')
 export const staticPaths = [
   {
+    dir: resolve(cwd, '../../src/app/branding'),
+    path: '/images'
+  },
+  {
     dir: resolve(cwd, '../../node_modules/electerm-icons/icons'),
     path: '/icons'
   },

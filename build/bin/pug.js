@@ -22,7 +22,7 @@ const data = {
   version: pack.version,
   siteName: appName,
   isDev: false,
-  customUI: process.env.CUSTOM_UI === '1'
+  customUI: process.env.CUSTOM_UI !== '0'
 }
 const htmlContent = pug.render(pugContent, {
   filename: entryPug,

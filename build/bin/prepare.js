@@ -38,13 +38,12 @@ mkdir('-p', 'dist/latest')
 cp('-r', 'src/app', 'work/')
 // Bake the custom-UI flag into the packaged app: env vars don't exist when
 // a packaged app is launched from a desktop icon, so the runtime env check
-// is replaced with a constant at pack time.
-if (process.env.CUSTOM_UI === '1') {
-  require('fs').writeFileSync(
-    resolve(cwd, 'work/app/common/custom-ui-flag.js'),
-    'module.exports = true\n'
-  )
-}
+// is replaced with a constant at pack time. Default is on; CUSTOM_UI=0
+// packs the stock electerm UI.
+require('fs').writeFileSync(
+  resolve(cwd, 'work/app/common/custom-ui-flag.js'),
+  `module.exports = ${process.env.CUSTOM_UI !== '0'}\n`
+)
 rm('-rf', 'work/app/user-config.json')
 rm('-rf', 'work/app/localstorage.json')
 rm('-rf', 'work/app/nohup.out')
