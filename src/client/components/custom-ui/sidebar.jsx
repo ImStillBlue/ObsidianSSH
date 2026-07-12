@@ -4,6 +4,7 @@ import { Tooltip } from 'antd'
 import { ArrowRightOutlined, CodeOutlined, FolderOutlined } from '@ant-design/icons'
 import Sftp from '../sftp/sftp-entry'
 import MacrosPanel from './macros-panel.jsx'
+import SftpDropZone from './sftp-drop-zone.jsx'
 import {
   paneMap,
   terminalFtpType,
@@ -92,38 +93,40 @@ export default auto(function Sidebar (props) {
         </Tooltip>
       </div>
       <div className='cu-sidebar-sftp' ref={boxRef}>
-        {width > 0 && sftpTabs.map(tab => {
-          const active = tab.id === activeId
-          return (
-            <div
-              key={tab.id}
-              className={active ? 'cu-sftp-pane' : 'cu-sftp-pane hide'}
-            >
-              <Sftp
-                tab={tab}
-                config={store.config}
-                pane={tab.pane || paneMap.terminal}
-                cwd={cwds[tab.id] || ''}
-                pid={tab.id}
-                sessionOptions={null}
-                isFtp={tab.type === terminalFtpType}
-                sftpPathFollowSsh={followTerm}
-                onSftpPathChange={path => {
-                  sftpPathsRef.current[tab.id] = path
-                  if (active && store.cuTerminalFollowSftp) {
-                    store.cdTerminal(path, tab.id)
-                  }
-                }}
-                sshSftpSplitView
-                currentBatchTabId={activeId}
-                fileOperation={store.fileOperation}
-                width={width}
-                height={height}
-                editTab={(id, up) => store.updateTab(id, up)}
-              />
-            </div>
-          )
-        })}
+        <SftpDropZone activeTabId={activeId}>
+          {width > 0 && sftpTabs.map(tab => {
+            const active = tab.id === activeId
+            return (
+              <div
+                key={tab.id}
+                className={active ? 'cu-sftp-pane' : 'cu-sftp-pane hide'}
+              >
+                <Sftp
+                  tab={tab}
+                  config={store.config}
+                  pane={tab.pane || paneMap.terminal}
+                  cwd={cwds[tab.id] || ''}
+                  pid={tab.id}
+                  sessionOptions={null}
+                  isFtp={tab.type === terminalFtpType}
+                  sftpPathFollowSsh={followTerm}
+                  onSftpPathChange={path => {
+                    sftpPathsRef.current[tab.id] = path
+                    if (active && store.cuTerminalFollowSftp) {
+                      store.cdTerminal(path, tab.id)
+                    }
+                  }}
+                  sshSftpSplitView
+                  currentBatchTabId={activeId}
+                  fileOperation={store.fileOperation}
+                  width={width}
+                  height={height}
+                  editTab={(id, up) => store.updateTab(id, up)}
+                />
+              </div>
+            )
+          })}
+        </SftpDropZone>
       </div>
       <div className='cu-sidebar-macros'>
         <MacrosPanel store={store} />

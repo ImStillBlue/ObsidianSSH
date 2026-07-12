@@ -650,6 +650,57 @@
   min-height: 200px;
 }
 
+/* drop-zone wrapper must fill the sidebar so the absolute panes
+   keep sizing against the same box as before */
+.cu-drop-zone {
+  position: absolute;
+  inset: 0;
+}
+
+.cu-drop-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--obs-bg-darker) 72%, transparent);
+  backdrop-filter: blur(2px);
+  border: 2px dashed var(--obs-primary);
+  border-radius: 6px;
+  /* the overlay sits over the pane mid-drag; without this every child
+     entering/leaving would spam dragenter/dragleave and flicker */
+  pointer-events: none;
+}
+
+.cu-drop-overlay-inner {
+  text-align: center;
+  color: var(--obs-text);
+  max-width: 90%;
+}
+
+.cu-drop-icon {
+  font-size: 34px;
+  color: var(--obs-primary);
+  display: block;
+  margin-bottom: 8px;
+}
+
+.cu-drop-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.cu-drop-path {
+  font-size: 11px;
+  color: var(--obs-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  direction: rtl;
+}
+
 .cu-sftp-pane {
   position: absolute;
   inset: 0;
