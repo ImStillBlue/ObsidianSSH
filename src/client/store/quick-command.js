@@ -17,6 +17,7 @@ import { readClipboardAsync } from '../common/clipboard'
 
 // Function to parse templates in command string
 async function parseTemplates (cmd) {
+  if (typeof cmd !== 'string') return ''
   if (!cmd.includes('{{')) return cmd
 
   // Process each template from templates.js
@@ -88,7 +89,14 @@ export default Store => {
             ]
           : []
         )
+    if (qm?.startDirectory) {
+      store.cdTerminal(qm.startDirectory)
+      await delay(150)
+    }
     for (const q of qms) {
+      if (typeof q?.command !== 'string' || !q.command.trim()) {
+        continue
+      }
       let realCmd = isWin
         ? q.command.replace(/\n/g, '\n\r')
         : q.command

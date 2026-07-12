@@ -129,7 +129,7 @@ export default auto(function Sidebar (props) {
         </SftpDropZone>
       </div>
       <div className='cu-sidebar-macros'>
-        <MacrosPanel store={store} />
+        <MacrosPanel store={store} cwd={cwds[activeId] || ''} />
       </div>
     </div>
   )

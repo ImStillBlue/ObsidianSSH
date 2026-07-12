@@ -345,7 +345,7 @@ export const telnetAuthFields = [
 // Common tab configurations - functions to ensure translation happens at render time
 export const quickCommandsTab = () => ({
   key: 'quickCommands',
-  label: e('quickCommands'),
+  label: 'Macros',
   fields: [commonFields.quickCommands]
 })
 

@@ -50,7 +50,7 @@ export default function SyncDataCompare (props) {
     bookmarks: e('bookmarks') || 'Bookmarks',
     bookmarkGroups: 'Bookmark Groups',
     terminalThemes: e('terminalThemes') || 'Terminal Themes',
-    quickCommands: e('quickCommands') || 'Quick Commands',
+    quickCommands: 'Macros',
     profiles: e('profiles') || 'Profiles',
     addressBookmarks: e('addressBookmarks') || 'Address Bookmarks',
     workspaces: e('workspaces') || 'Workspaces'

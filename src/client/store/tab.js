@@ -163,6 +163,31 @@ export default Store => {
     store[`activeTabId${sourceTab.batch}`] = duplicatedTab.id
   }
 
+  Store.prototype.openTmuxTab = function (tabId, sessionName, command) {
+    const { store } = window
+    const targetIndex = store.tabs.findIndex(tab => tab.id === tabId)
+    if (targetIndex === -1) return
+    const sourceTab = store.tabs[targetIndex]
+    const tmuxTab = {
+      ...deepCopy(sourceTab),
+      id: generate(),
+      tabCount: store.nextTabCount(),
+      status: statusMap.processing,
+      isTransporting: undefined,
+      title: `tmux: ${sessionName}`,
+      tmuxSession: sessionName,
+      tmuxPreviousTitle: sourceTab.title || '',
+      runScripts: [{
+        script: command,
+        delay: 150
+      }]
+    }
+    store.tabs.splice(targetIndex + 1, 0, tmuxTab)
+    store.updateHistory(tmuxTab)
+    store.activeTabId = tmuxTab.id
+    store[`activeTabId${sourceTab.batch}`] = tmuxTab.id
+  }
+
   Store.prototype.closeOtherTabs = function (id) {
     const { store } = window
     const { tabs } = store

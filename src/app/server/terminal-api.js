@@ -6,15 +6,25 @@ const { testConnection, terminal, terminals } = require('./session-process')
 
 async function runCmd (ws, msg) {
   const { id, pid, cmd } = msg
-  const term = terminals(pid)
-  let txt = ''
-  if (term) {
-    txt = await term.runCmd(cmd, id)
+  try {
+    const term = terminals(pid)
+    let txt = ''
+    if (term) {
+      txt = await term.runCmd(cmd, id)
+    }
+    ws.s({
+      id,
+      data: txt
+    })
+  } catch (error) {
+    ws.s({
+      id,
+      error: {
+        message: error.message,
+        stack: error.stack
+      }
+    })
   }
-  ws.s({
-    id,
-    data: txt
-  })
 }
 
 function resize (ws, msg) {

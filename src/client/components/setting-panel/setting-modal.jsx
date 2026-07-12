@@ -92,7 +92,7 @@ export default auto(function SettingModalWrap (props) {
       },
       {
         key: settingMap.quickCommands,
-        label: e(settingMap.quickCommands),
+        label: 'Macros',
         children: null
       },
       {

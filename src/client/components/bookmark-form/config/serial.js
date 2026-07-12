@@ -73,7 +73,7 @@ const serialConfig = {
     },
     {
       key: 'quickCommands',
-      label: e('quickCommands'),
+      label: 'Macros',
       fields: [
         { type: 'quickCommands', name: '__quick__', label: '' }
       ]

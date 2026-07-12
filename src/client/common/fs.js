@@ -45,12 +45,12 @@ fs.decodeBase64String = (base64String) => {
 Object.assign(fs, {
   stat: (path, cb) => {
     window.fs.statCustom(path)
-      .catch(err => cb(err))
       .then(obj => {
         obj.isDirectory = () => obj.isD
         obj.isFile = () => obj.isF
         cb(undefined, obj)
       })
+      .catch(err => cb(err))
   },
   access: (...args) => {
     const cb = args.pop()

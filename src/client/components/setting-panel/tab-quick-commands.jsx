@@ -20,7 +20,7 @@ export default function TabQuickCommands (props) {
   } = props
   return (
     <div
-      className='setting-tabs-quick-commands'
+      className='setting-tabs-quick-commands macros-settings'
     >
       <SettingCol>
         <QuickCommandsList
@@ -30,7 +30,7 @@ export default function TabQuickCommands (props) {
         <QuickCommandsForm
           {...formProps}
           quickCommandTags={store.quickCommandTags}
-          key={settingItem.id}
+          key={`${settingItem.id}-${(settingItem.labels || []).join('|')}`}
         />
       </SettingCol>
     </div>
