@@ -1,0 +1,88 @@
+name: release
+
+# Tag-triggered release builds for the ObsidianSSH fork.
+# Push a tag like v3.15.127 and this builds Linux (tar.gz) and Windows
+# (NSIS installer) and attaches both to a GitHub release for that tag.
+# Tags containing a dash (v3.15.127-rc1) are marked as prereleases.
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create GitHub release if missing
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="$GITHUB_REF_NAME"
+          if ! gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            args=(--title "ObsidianSSH ${tag#v}" --generate-notes)
+            case "$tag" in *-*) args+=(--prerelease) ;; esac
+            gh release create "$tag" "${args[@]}" --repo "$GITHUB_REPOSITORY"
+          fi
+
+  linux:
+    needs: create-release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+      - run: npm config set legacy-peer-deps true
+      - run: npm install -g yarn
+      - run: npm i
+      - run: npm run b
+      - run: npm run pb
+      - name: Package
+        env:
+          WORKFLOW_NAME: release
+        run: npx electron-builder --linux tar.gz --publish never
+      - name: Upload to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for f in dist/*.tar.gz; do
+            out="obsidianssh-$(basename "$f" | sed 's/^electerm-//')"
+            mv "$f" "dist/$out"
+            gh release upload "$GITHUB_REF_NAME" "dist/$out" --clobber --repo "$GITHUB_REPOSITORY"
+          done
+
+  windows:
+    needs: create-release
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+      - run: npm config set legacy-peer-deps true
+      - run: npm install -g node-gyp yarn
+      # Upstream pins these exact versions for Windows builds
+      - run: npm un node-pty serialport
+      - run: npm i
+      - run: npm i -S -E node-pty@1.1.0-beta14
+      - run: npm i -S -E serialport@13.0.0
+      - run: npm run b
+      - run: npm run pb
+      - name: Package
+        env:
+          WORKFLOW_NAME: release
+        run: npx electron-builder --win nsis --publish never
+      - name: Upload to release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          for f in dist/*.exe; do
+            out="obsidianssh-$(basename "$f" | sed 's/^electerm-//')"
+            mv "$f" "dist/$out"
+            gh release upload "$GITHUB_REF_NAME" "dist/$out" --clobber --repo "$GITHUB_REPOSITORY"
+          done
