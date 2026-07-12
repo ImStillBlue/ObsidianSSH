@@ -1,7 +1,11 @@
 import { auto } from 'manate/react'
 import { useMemo, useState } from 'react'
 import { Input } from 'antd'
-import { ArrowLeftOutlined, FolderOutlined } from '@ant-design/icons'
+import {
+  ArrowLeftOutlined,
+  FolderOutlined,
+  PlayCircleOutlined
+} from '@ant-design/icons'
 
 const UNLABELED = '__unlabeled__'
 const ALL = '__all__'
@@ -54,6 +58,17 @@ export default auto(function MacrosPanel (props) {
     : macrosInFolder
 
   const run = id => store.runQuickCommandItem(id)
+  const commandText = macro => {
+    const commands = macro.commands || (macro.command
+      ? [{ command: macro.command }]
+      : [])
+    return commands
+      .map(item => item.command)
+      .filter(Boolean)
+      .join(' ; ')
+      .replace(/\s+/g, ' ')
+      .trim()
+  }
   const openFolder = id => {
     setFolder(id)
     setKw('')
@@ -137,11 +152,17 @@ export default auto(function MacrosPanel (props) {
                   key={m.id}
                   className='cu-macro'
                   onClick={() => run(m.id)}
-                  title={(m.commands || []).map(c => c.command).join(' ; ')}
+                  title={commandText(m)}
                 >
-                  <span className='cu-macro-name'>{m.name}</span>
+                  <PlayCircleOutlined className='cu-macro-run' />
+                  <span className='cu-macro-content'>
+                    <span className='cu-macro-name'>{m.name}</span>
+                    {commandText(m) && (
+                      <span className='cu-macro-command'>{commandText(m)}</span>
+                    )}
+                  </span>
                   {m.labels && m.labels.length > 0 && (
-                    <span className='cu-macro-labels'>{m.labels.join(' · ')}</span>
+                    <span className='cu-macro-labels'>{m.labels.join(', ')}</span>
                   )}
                 </button>
               ))}
