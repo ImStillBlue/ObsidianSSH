@@ -18,6 +18,8 @@ export default auto(function TmuxPanel ({ store, cwd }) {
   const [state, setState] = useState({ loading: true, available: true, version: '', sessions: [] })
   const [error, setError] = useState('')
   const [expanded, setExpanded] = useState({})
+  const activeTab = store.tabs.find(tab => tab.id === pid)
+  const activeTmuxSession = activeTab?.tmuxSession || ''
 
   const refresh = useCallback(async (quiet = false) => {
     if (!pid) return
@@ -51,7 +53,10 @@ export default auto(function TmuxPanel ({ store, cwd }) {
     const name = ask('New tmux session name')
     if (name) act(() => tmuxCommand.createSession(pid, name, cwd))
   }
-  const attach = name => store.runQuickCommand(attachCommand(name))
+  const attach = name => {
+    store.updateTab(pid, { tmuxSession: name })
+    store.runQuickCommand(attachCommand(name))
+  }
   const openInTab = async (session, target) => {
     if (target) {
       await tmuxCommand.selectPane(pid, target)
@@ -68,7 +73,12 @@ export default auto(function TmuxPanel ({ store, cwd }) {
     }
   }
   const detachSession = session => {
-    act(() => tmuxCommand.detachSession(pid, session.name))
+    if (activeTmuxSession !== session.name) return
+    store.runQuickCommand('tmux detach-client')
+    setTimeout(() => {
+      store.updateTab(pid, { tmuxSession: '' })
+      refresh(true)
+    }, 350)
   }
   const createWindow = session => {
     const name = ask(`New window in ${session.name} (optional name)`)
@@ -124,8 +134,8 @@ export default auto(function TmuxPanel ({ store, cwd }) {
                           <button onClick={() => createWindow(session)} title='New window'><PlusOutlined /></button>
                           <button
                             onClick={() => detachSession(session)}
-                            title='Detach clients and keep session running'
-                            disabled={!session.attached}
+                            title='Detach this ObsidianSSH tab and keep session running'
+                            disabled={activeTmuxSession !== session.name}
                           >
                             <DisconnectOutlined />
                           </button>

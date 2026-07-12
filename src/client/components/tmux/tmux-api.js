@@ -75,7 +75,6 @@ export async function inspectTmux (pid) {
 export const tmuxCommand = {
   createSession: (pid, name, cwd) => runCmd(pid, `tmux new-session -d -s ${quote(name)}${cwd ? ` -c ${quote(cwd)}` : ''}`),
   renameSession: (pid, target, name) => runCmd(pid, `tmux rename-session -t ${quote(target)} ${quote(name)}`),
-  detachSession: (pid, name) => runCmd(pid, `tmux detach-client -s ${quote(name)}`),
   killSession: (pid, name) => runCmd(pid, `tmux kill-session -t ${quote(name)}`),
   createWindow: (pid, session, name, cwd) => runCmd(pid, `tmux new-window -d -t ${quote(session)}${name ? ` -n ${quote(name)}` : ''}${cwd ? ` -c ${quote(cwd)}` : ''}`),
   renameWindow: (pid, target, name) => runCmd(pid, `tmux rename-window -t ${quote(target)} ${quote(name)}`),

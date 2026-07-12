@@ -175,6 +175,7 @@ export default Store => {
       status: statusMap.processing,
       isTransporting: undefined,
       title: `tmux: ${sessionName}`,
+      tmuxSession: sessionName,
       runScripts: [{
         script: command,
         delay: 150
