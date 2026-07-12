@@ -827,6 +827,10 @@ export default class FileSection extends React.Component {
     })
   }
 
+  editFileWithSystemEditor = () => {
+    this.editFile(!window.et.isWebApp)
+  }
+
   transferOrEnterDirectory = async (e, edit) => {
     const { file } = this.state
     const { isDirectory, type, size } = file
@@ -1210,9 +1214,9 @@ export default class FileSection extends React.Component {
     }
     if (showEdit) {
       res.push({
-        func: 'editFile',
+        func: 'editFileWithSystemEditor',
         icon: 'EditOutlined',
-        text: e('edit')
+        text: window.et.isWebApp ? e('edit') : e('editWithSystemEditor')
       })
     }
     if (isRealFile) {

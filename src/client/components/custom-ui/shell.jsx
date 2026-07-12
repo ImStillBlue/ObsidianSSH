@@ -21,6 +21,7 @@ import ConfirmModalStore from '../file-transfer/conflict-resolve.jsx'
 import TransportsActionStore from '../file-transfer/transports-action-store.jsx'
 import Remote2RemoteHandlers from '../file-transfer/remote2remote-handlers.jsx'
 import TransferQueue from '../file-transfer/transfer-queue'
+import TextEditor from '../text-editor/text-editor-entry'
 import TopBar from './top-bar.jsx'
 import TabStrip from './tab-strip.jsx'
 import Workspace from './workspace.jsx'
@@ -72,6 +73,7 @@ export default auto(function CustomShell (props) {
         <Remote2RemoteHandlers />
         <TerminalCmdSuggestions {...cmdSuggestionsProps} />
         <TransferQueue />
+        <TextEditor />
         <NotificationContainer />
       </div>
     </ConfigProvider>
