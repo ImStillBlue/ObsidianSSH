@@ -55,7 +55,7 @@ export default class TextEditor extends PureComponent {
   }
 
   fetchText = async ({
-    id, file
+    id, file, systemEditor
   }) => {
     this.setStateProxy({
       loading: true
@@ -81,6 +81,8 @@ export default class TextEditor extends PureComponent {
     }, () => {
       if (editorCommand) {
         this.editWithCustom(editorCommand)
+      } else if (systemEditor && !window.et.isWebApp) {
+        this.editWith()
       }
     })
   }

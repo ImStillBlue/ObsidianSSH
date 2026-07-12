@@ -191,6 +191,45 @@ export default class FileSection extends React.Component {
     this.props.addTransferList(res)
   }
 
+  downloadRemoteFileForDrag = (file, localPath) => {
+    const remotePath = resolve(file.path, file.name)
+    return new Promise((resolve, reject) => {
+      let transport
+      const done = () => {
+        transport?.destroy()
+        resolve(localPath)
+      }
+      const fail = error => {
+        transport?.destroy()
+        reject(error)
+      }
+      this.props.sftp.download({
+        remotePath,
+        localPath,
+        isDirectory: false,
+        options: { mode: file.mode },
+        onData: () => {},
+        onError: fail,
+        onEnd: done
+      }).then(instance => { transport = instance }).catch(fail)
+    })
+  }
+
+  startRemoteFileDrag = async files => {
+    const regularFiles = files.filter(file => !file.isDirectory)
+    if (!regularFiles.length) {
+      return message.warning('Drag-out currently supports files, not folders')
+    }
+    const stagingDir = window.pre.resolve(window.pre.tempDir, `electerm-drag-${generate()}`)
+    await window.fs.mkdir(stagingDir, { recursive: true })
+    const localFiles = []
+    for (const file of regularFiles) {
+      const localPath = window.pre.resolve(stagingDir, sanitizeFilename(file.name))
+      localFiles.push(await this.downloadRemoteFileForDrag(file, localPath))
+    }
+    window.api.startFileDrag(localFiles)
+  }
+
   onDragStart = e => {
     this.props.modifier({
       onDrag: true
@@ -204,6 +243,15 @@ export default class FileSection extends React.Component {
     const dragFiles = selected
       ? this.props.getSelectedFiles()
       : [this.props.file]
+    if (
+      e.altKey &&
+      this.props.file.type === typeMap.remote &&
+      !window.et.isWebApp
+    ) {
+      e.preventDefault()
+      this.startRemoteFileDrag(dragFiles).catch(window.store.onError)
+      return
+    }
     const filesWithMeta = dragFiles.map(file => {
       return {
         ...file,
@@ -712,7 +760,6 @@ export default class FileSection extends React.Component {
     window.pre.runGlobalAsync('watchFile', tempPath)
     window.fs.openFile(tempPath)
       .catch(window.store.onError)
-    window.pre.showItemInFolder(tempPath)
     window.pre.ipcOnEvent('file-change', this.onFileChange)
   }
 
@@ -771,11 +818,12 @@ export default class FileSection extends React.Component {
     }
   }
 
-  editFile = () => {
+  editFile = (systemEditor = false) => {
     refs.add(this.id, this)
     this.editor?.openEditor({
       id: this.id,
-      file: this.state.file
+      file: this.state.file,
+      systemEditor
     })
   }
 
@@ -794,7 +842,7 @@ export default class FileSection extends React.Component {
     if (
       edit === true || remoteEdit
     ) {
-      return this.editFile()
+      return this.editFile(!edit && isRemote && !window.et.isWebApp)
     }
     if (
       this.props.tab?.host
@@ -898,6 +946,41 @@ export default class FileSection extends React.Component {
 
   doTransfer = () => {
     this.transfer()
+  }
+
+  downloadTo = async () => {
+    const { file } = this.state
+    const { name, isDirectory } = file
+    let toPath = ''
+    if (isDirectory) {
+      const paths = await window.api.openDialog({
+        title: `Download ${name} to…`,
+        defaultPath: this.props.localPath,
+        properties: ['openDirectory', 'createDirectory']
+      })
+      if (!paths?.[0]) return
+      toPath = resolve(paths[0], sanitizeFilename(name))
+    } else {
+      const result = await window.api.saveDialog({
+        title: `Download ${name} as…`,
+        defaultPath: resolve(this.props.localPath, sanitizeFilename(name))
+      })
+      if (result.canceled || !result.filePath) return
+      toPath = result.filePath
+    }
+    const transfers = await this.getTransferList(file)
+    transfers.forEach(transfer => { transfer.toPath = toPath })
+    this.props.addTransferList(transfers)
+  }
+
+  downloadSelectedTo = async () => {
+    const paths = await window.api.openDialog({
+      title: 'Download selected files to…',
+      defaultPath: this.props.localPath,
+      properties: ['openDirectory', 'createDirectory']
+    })
+    if (!paths?.[0]) return
+    this.doTransferSelected(undefined, this.props.getSelectedFiles(), paths[0], typeMap.local)
   }
 
   zipAndTransfer = async () => {
@@ -1071,7 +1154,7 @@ export default class FileSection extends React.Component {
     }
     if (shouldShowSelectedMenu && hasHost) {
       res.push({
-        func: 'doTransferSelected',
+        func: isRemote ? 'downloadSelectedTo' : 'doTransferSelected',
         icon: iconType,
         text: `${transferText}:${e('selected')}(${len})`
       })
@@ -1092,7 +1175,7 @@ export default class FileSection extends React.Component {
     }
     if (!(!isRealFile || !hasHost || shouldShowSelectedMenu)) {
       res.push({
-        func: 'doTransfer',
+        func: isRemote ? 'downloadTo' : 'doTransfer',
         icon: iconType,
         text: transferText
       })
@@ -1332,7 +1415,9 @@ export default class FileSection extends React.Component {
       'data-id': id,
       id: this.id,
       'data-type': type,
-      title: file.name
+      title: file.type === typeMap.remote && !window.et.isWebApp
+        ? `${file.name}\nAlt-drag to copy to your desktop or file manager`
+        : file.name
     }
     return (
       <div

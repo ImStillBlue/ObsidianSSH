@@ -22,6 +22,9 @@ contextBridge.exposeInMainWorld(
     saveDialog: (opts) => {
       return ipcRenderer.invoke('show-save-dialog', opts)
     },
+    startFileDrag: (files) => {
+      ipcRenderer.send('start-file-drag', files)
+    },
     ipcOnEvent: (event, cb) => {
       ipcRenderer.on(event, cb)
     },

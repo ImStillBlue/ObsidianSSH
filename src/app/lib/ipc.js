@@ -9,7 +9,8 @@ const {
   dialog,
   powerMonitor,
   globalShortcut,
-  shell
+  shell,
+  nativeImage
 } = require('electron')
 const globalState = require('./glob-state')
 const ipcSyncFuncs = require('./ipc-sync')
@@ -69,6 +70,7 @@ const { initCommandLine } = require('./command-line')
 const { watchFile, unwatchFile } = require('./watch-file')
 const lookup = require('../common/lookup')
 const { AIchat, AIchatWithTools, getStreamContent, stopStream } = require('./ai')
+const { iconPath } = require('../common/runtime-constants')
 
 // Security: whitelist of safe environment variables for Linux/Mac/Windows
 const SAFE_ENV_KEYS = [
@@ -248,6 +250,14 @@ function initIpc () {
   ipcMain.handle('show-save-dialog', async (event, ...args) => {
     const win = BrowserWindow.fromWebContents(event.sender)
     return dialog.showSaveDialog(win, ...args)
+  })
+  ipcMain.on('start-file-drag', (event, files) => {
+    const safeFiles = Array.isArray(files) ? files.filter(Boolean) : []
+    if (!safeFiles.length) return
+    event.sender.startDrag({
+      files: safeFiles,
+      icon: nativeImage.createFromPath(iconPath)
+    })
   })
 }
 
