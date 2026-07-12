@@ -16,7 +16,7 @@ const base = {
   version: pack.version,
   isDev: !isProd,
   siteName: appName,
-  customUI: env.CUSTOM_UI === '1'
+  customUI: env.CUSTOM_UI !== '0'
 }
 
 function handleIndex (req, res) {
