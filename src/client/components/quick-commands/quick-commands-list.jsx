@@ -3,17 +3,18 @@
  */
 
 import List from '../setting-panel/list'
-import { PlusOutlined, CopyOutlined } from '@ant-design/icons'
-import { Select } from 'antd'
+import { PlusOutlined, CopyOutlined, FolderOutlined, FolderOpenOutlined, InboxOutlined } from '@ant-design/icons'
 import classnames from 'classnames'
 import highlight from '../common/highlight'
 import QmTransport from './quick-command-transport'
 import onDrop from './on-drop'
 import copy from 'json-deep-copy'
 import uid from '../../common/uid'
+import './qm.styl'
 
-const { Option } = Select
 const e = window.translate
+const allFolders = '__all_folders__'
+const unfiled = '__unfiled__'
 
 export default class QuickCommandsList extends List {
   del = (item, e) => {
@@ -27,7 +28,7 @@ export default class QuickCommandsList extends List {
 
   handleChangeLabel = v => {
     this.setState({
-      labels: v
+      labels: v === allFolders ? [] : [v]
     })
   }
 
@@ -121,7 +122,7 @@ export default class QuickCommandsList extends List {
               ? <PlusOutlined className='mg1r' />
               : null
           }
-          {title}
+          {id ? title : 'New macro'}
         </div>
         {this.renderDuplicateBtn(item)}
         {this.renderDelBtn(item)}
@@ -139,33 +140,30 @@ export default class QuickCommandsList extends List {
 
   renderLabels = () => {
     const arr = this.getLabels()
-    const props = {
-      placeholder: e('labels'),
-      mode: 'multiple',
-      value: this.state.labels,
-      onChange: this.handleChangeLabel,
-      style: {
-        width: '100%'
-      }
-    }
+    const selected = this.state.labels[0] || allFolders
+    const count = folder => (this.props.list || []).filter(item => {
+      const folders = item.labels || []
+      return folder === allFolders || (folder === unfiled ? !folders.length : folders.includes(folder))
+    }).length
+    const folders = [
+      { id: allFolders, name: 'All macros', icon: <FolderOpenOutlined /> },
+      ...arr.map(name => ({ id: name, name, icon: <FolderOutlined /> })),
+      { id: unfiled, name: 'Unfiled', icon: <InboxOutlined /> }
+    ]
     return (
-      <div className='pd1b'>
-        <Select
-          {...props}
-        >
-          {
-            arr.map(b => {
-              return (
-                <Option
-                  key={'qml-' + b}
-                  value={b}
-                >
-                  {b}
-                </Option>
-              )
-            })
-          }
-        </Select>
+      <div className='macro-folders'>
+        <div className='macro-folders-heading'>Folders</div>
+        {folders.map(folder => (
+          <button
+            type='button'
+            key={folder.id}
+            className={classnames('macro-folder', { active: selected === folder.id })}
+            onClick={() => this.handleChangeLabel(folder.id)}
+          >
+            <span className='macro-folder-name'>{folder.icon}{folder.name}</span>
+            <span className='macro-folder-count'>{count(folder.id)}</span>
+          </button>
+        ))}
       </div>
     )
   }
@@ -193,6 +191,9 @@ export default class QuickCommandsList extends List {
     return labels.length
       ? f.filter(d => {
         return labels.some(label => {
+          if (label === unfiled) {
+            return !(d.labels || []).length
+          }
           return (d.labels || []).includes(label)
         })
       })

@@ -43,7 +43,7 @@ export default function useQuickCmds (form, formData) {
           fieldKey={[field.fieldKey, 'second']}
           rules={[{ required: true, max: 300 }]}
         >
-          <Input placeholder={e('quickCommand')} />
+          <Input placeholder='Macro command' />
         </FormItem>
         <MinusCircleOutlined onClick={() => remove(field.name)} />
       </Space>
@@ -52,7 +52,7 @@ export default function useQuickCmds (form, formData) {
   return (
     <FormList
       {...formItemLayout}
-      label={e('quickCommands')}
+      label='Macros'
       name='quickCommands'
     >
       {

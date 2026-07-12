@@ -12,8 +12,6 @@ import { useRef } from 'react'
 
 const FormItem = Form.Item
 const FormList = Form.List
-const e = window.translate
-
 export default function renderQm (form) {
   const focused = useRef(0)
   const dragIndexRef = useRef(null)
@@ -78,7 +76,7 @@ export default function renderQm (form) {
       >
         <HolderOutlined className='mg1r drag' />
 
-        <Space.Addon>{e('delay')}</Space.Addon>
+        <Space.Addon>Wait</Space.Addon>
         <FormItem
           label=''
           name={[field.name, 'delay']}
@@ -103,7 +101,7 @@ export default function renderQm (form) {
         >
           <Input.TextArea
             autoSize={{ minRows: 1 }}
-            placeholder={e('quickCommand')}
+            placeholder='Enter a terminal command'
             className='compact-input qm-input'
             onFocus={() => {
               focused.current = i
@@ -157,7 +155,7 @@ export default function renderQm (form) {
   })
   const label = (
     <div>
-      {e('quickCommands')}
+      Steps
       <HelpIcon
         title={cmds}
       />
@@ -183,7 +181,7 @@ export default function renderQm (form) {
                     onClick={() => add()}
                     icon={<PlusOutlined />}
                   >
-                    {e('quickCommand')}
+                    Add step
                   </Button>
                 </FormItem>
               </>

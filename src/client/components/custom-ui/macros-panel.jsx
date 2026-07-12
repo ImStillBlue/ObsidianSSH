@@ -124,7 +124,7 @@ export default auto(function MacrosPanel (props) {
               )}
               {visibleFolders.length === 0 && all.length === 0 && (
                 <div className='cu-macros-empty'>
-                  No macros yet. Add quick commands in {window.et?.siteName || 'ObsidianSSH'} settings.
+                  No macros yet. Create one in {window.et?.siteName || 'ObsidianSSH'} settings.
                 </div>
               )}
               {visibleFolders.map(f => (

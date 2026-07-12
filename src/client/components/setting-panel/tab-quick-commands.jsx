@@ -20,7 +20,7 @@ export default function TabQuickCommands (props) {
   } = props
   return (
     <div
-      className='setting-tabs-quick-commands'
+      className='setting-tabs-quick-commands macros-settings'
     >
       <SettingCol>
         <QuickCommandsList

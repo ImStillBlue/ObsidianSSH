@@ -173,7 +173,7 @@ export default function QuickCommandsFooterBox (props) {
   const sprops = {
     value: label,
     onChange: handleChangeLabels,
-    placeholder: e('labels'),
+    placeholder: 'Folders',
     className: 'qm-label-select',
     allowClear: true
   }

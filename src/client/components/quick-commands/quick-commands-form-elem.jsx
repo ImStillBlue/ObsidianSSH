@@ -107,7 +107,13 @@ export default function QuickCommandForm (props) {
   }).join(', ')
   const wiki = 'https://github.com/electerm/electerm/wiki/quick-command-templates'
   return (
-    <>
+    <div className='macro-editor'>
+      <div className='macro-editor-header'>
+        <div>
+          <h2>{formData.id ? 'Edit macro' : 'Create a macro'}</h2>
+          <p>Build a reusable sequence of terminal commands.</p>
+        </div>
+      </div>
       <Form
         form={form}
         onFinish={handleSubmit}
@@ -116,7 +122,7 @@ export default function QuickCommandForm (props) {
         initialValues={initialValues}
       >
         <FormItem
-          label={e('quickCommandName')}
+          label='Macro name'
           rules={[{
             max: 60, message: '60 chars max'
           }, {
@@ -130,10 +136,12 @@ export default function QuickCommandForm (props) {
         {renderQm(form)}
         <FormItem
           name='labels'
-          label={e('label')}
+          label='Folders'
+          extra='Choose where this macro appears. Type a new name to create a folder.'
         >
           <Select
             mode='tags'
+            placeholder='Choose or create folders'
           >
             {
               quickCommandTags.map(q => {
@@ -169,7 +177,7 @@ export default function QuickCommandForm (props) {
             <Button
               type='primary'
               htmlType='submit'
-            >{e('save')}
+            >{formData.id ? 'Save changes' : 'Create macro'}
             </Button>
           </p>
         </FormItem>
@@ -181,6 +189,6 @@ export default function QuickCommandForm (props) {
           />
         </p>
       </Form>
-    </>
+    </div>
   )
 }

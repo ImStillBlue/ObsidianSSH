@@ -52,7 +52,7 @@ const localConfig = {
     },
     {
       key: 'quickCommands',
-      label: e('quickCommands'),
+      label: 'Macros',
       fields: [
         commonFields.quickCommands
       ]
