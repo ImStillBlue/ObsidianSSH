@@ -782,24 +782,42 @@
   overflow-y: auto;
 }
 
-.cu-sidebar-sftp .sftp-table-content::-webkit-scrollbar {
+/* Unified scrollbar for the whole custom UI (macros, SFTP, bookmarks,
+   terminal...) — overrides the stock 7px solid-primary one in basic.styl.
+   This file only loads under CUSTOM_UI, so stock skin is unaffected.
+   :root prefix outranks basic.styl's bare selectors regardless of
+   bundle order. */
+:root ::-webkit-scrollbar {
   width: 10px;
-}
-
-.cu-sidebar-sftp .sftp-table-content::-webkit-scrollbar-track {
+  height: 10px;
   background: transparent;
 }
 
-.cu-sidebar-sftp .sftp-table-content::-webkit-scrollbar-thumb {
+:root ::-webkit-scrollbar-track {
+  background: transparent;
+  -webkit-box-shadow: none;
+}
+
+:root ::-webkit-scrollbar-thumb {
   background: var(--obs-border);
   border-radius: 5px;
   border: 2px solid transparent;
   background-clip: content-box;
 }
 
-.cu-sidebar-sftp .sftp-table-content::-webkit-scrollbar-thumb:hover {
+:root ::-webkit-scrollbar-thumb:hover {
   background: var(--obs-text-muted);
   background-clip: content-box;
+}
+
+:root ::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* keep the terminal's hover-widened scrollbar consistent too
+   (basic.styl bumps it to 12px on hover; pin it to the unified 10px) */
+:root .term-wrap:hover ::-webkit-scrollbar {
+  width: 10px;
 }
 
 .cu-sidebar-macros {
