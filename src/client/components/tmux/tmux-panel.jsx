@@ -4,6 +4,7 @@ import { Spin, Tooltip } from 'antd'
 import {
   CaretRightOutlined,
   CloseOutlined,
+  DisconnectOutlined,
   EditOutlined,
   ExportOutlined,
   PlusOutlined,
@@ -66,6 +67,9 @@ export default auto(function TmuxPanel ({ store, cwd }) {
       act(() => tmuxCommand.killSession(pid, session.name))
     }
   }
+  const detachSession = session => {
+    act(() => tmuxCommand.detachSession(pid, session.name))
+  }
   const createWindow = session => {
     const name = ask(`New window in ${session.name} (optional name)`)
     if (name !== undefined) act(() => tmuxCommand.createWindow(pid, session.name, name, cwd))
@@ -118,6 +122,13 @@ export default auto(function TmuxPanel ({ store, cwd }) {
                           </button>
                           <button onClick={() => openInTab(session.name)} title='Open in new Electerm tab'><ExportOutlined /></button>
                           <button onClick={() => createWindow(session)} title='New window'><PlusOutlined /></button>
+                          <button
+                            onClick={() => detachSession(session)}
+                            title='Detach clients and keep session running'
+                            disabled={!session.attached}
+                          >
+                            <DisconnectOutlined />
+                          </button>
                           <button onClick={() => renameSession(session)} title='Rename session'><EditOutlined /></button>
                           <button onClick={() => killSession(session)} title='Kill session'><CloseOutlined /></button>
                         </div>
