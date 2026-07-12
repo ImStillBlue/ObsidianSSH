@@ -3,6 +3,7 @@
  */
 
 const { resolve: pathResolve } = require('path')
+const { exec } = require('child_process')
 const { TerminalBase } = require('./session-base')
 const globalState = require('./global-state')
 // const { MockBinding } = require('@serialport/binding-mock')
@@ -67,6 +68,25 @@ class TerminalLocal extends TerminalBase {
 
   write (data) {
     this.term.write(data)
+  }
+
+  runCmd (cmd) {
+    const { platform } = process
+    const shell = platform === 'win32'
+      ? pathResolve(process.env.windir, this.initOptions.execWindows)
+      : platform === 'darwin'
+        ? this.initOptions.execMac
+        : this.initOptions.execLinux
+    return new Promise((resolve, reject) => {
+      exec(cmd, {
+        shell,
+        env: process.env,
+        maxBuffer: 1024 * 1024
+      }, (error, stdout) => {
+        if (error && !stdout) return reject(error)
+        resolve(stdout || '')
+      })
+    })
   }
 
   kill () {

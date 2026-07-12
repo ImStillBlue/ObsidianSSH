@@ -4,6 +4,7 @@ import { Tooltip } from 'antd'
 import { ArrowRightOutlined, CodeOutlined, FolderOutlined } from '@ant-design/icons'
 import Sftp from '../sftp/sftp-entry'
 import MacrosPanel from './macros-panel.jsx'
+import TmuxPanel from '../tmux/tmux-panel.jsx'
 import SftpDropZone from './sftp-drop-zone.jsx'
 import {
   paneMap,
@@ -127,6 +128,9 @@ export default auto(function Sidebar (props) {
             )
           })}
         </SftpDropZone>
+      </div>
+      <div className='cu-sidebar-tmux'>
+        <TmuxPanel store={store} cwd={cwds[activeId] || ''} />
       </div>
       <div className='cu-sidebar-macros'>
         <MacrosPanel store={store} cwd={cwds[activeId] || ''} />
