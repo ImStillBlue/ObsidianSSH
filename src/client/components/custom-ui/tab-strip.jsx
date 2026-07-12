@@ -1,8 +1,9 @@
 import { auto } from 'manate/react'
 import { PlusOutlined } from '@ant-design/icons'
 import Tab from '../tabs/tab.jsx'
+import addLocalTab from './add-local-tab.js'
 
-const addTab = () => window.store.addTab(undefined, undefined, 0)
+const addTab = () => addLocalTab()
 
 export default auto(function TabStrip (props) {
   const { store } = props

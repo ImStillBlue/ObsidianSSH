@@ -176,6 +176,7 @@ export default Store => {
       isTransporting: undefined,
       title: `tmux: ${sessionName}`,
       tmuxSession: sessionName,
+      tmuxPreviousTitle: sourceTab.title || '',
       runScripts: [{
         script: command,
         delay: 150

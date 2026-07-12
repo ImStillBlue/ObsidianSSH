@@ -1,6 +1,6 @@
 import { auto } from 'manate/react'
 import { useCallback, useEffect, useState } from 'react'
-import { Spin, Tooltip } from 'antd'
+import { Input, Modal, Spin, Tooltip } from 'antd'
 import {
   CaretRightOutlined,
   CloseOutlined,
@@ -48,13 +48,32 @@ export default auto(function TmuxPanel ({ store, cwd }) {
       setError(err.message || 'tmux command failed')
     }
   }
-  const ask = (title, initial = '') => window.prompt(title, initial)?.trim()
-  const createSession = () => {
-    const name = ask('New tmux session name')
+  const ask = (title, initial = '') => new Promise(resolve => {
+    let value = initial
+    Modal.confirm({
+      title,
+      content: (
+        <Input
+          defaultValue={initial}
+          onChange={event => { value = event.target.value }}
+          autoFocus
+        />
+      ),
+      okText: 'Save',
+      onOk: () => resolve(value.trim()),
+      onCancel: () => resolve(undefined)
+    })
+  })
+  const createSession = async () => {
+    const name = await ask('New tmux session name')
     if (name) act(() => tmuxCommand.createSession(pid, name, cwd))
   }
   const attach = name => {
-    store.updateTab(pid, { tmuxSession: name })
+    store.updateTab(pid, {
+      tmuxSession: name,
+      tmuxPreviousTitle: activeTab?.tmuxPreviousTitle ?? activeTab?.title ?? '',
+      title: `tmux: ${name}`
+    })
     store.runQuickCommand(attachCommand(name))
   }
   const openInTab = async (session, target) => {
@@ -63,14 +82,18 @@ export default auto(function TmuxPanel ({ store, cwd }) {
     }
     store.openTmuxTab(pid, session, attachCommand(session))
   }
-  const renameSession = session => {
-    const name = ask('Rename tmux session', session.name)
+  const renameSession = async session => {
+    const name = await ask('Rename tmux session', session.name)
     if (name && name !== session.name) act(() => tmuxCommand.renameSession(pid, session.name, name))
   }
   const killSession = session => {
-    if (window.confirm(`Kill tmux session “${session.name}”?`)) {
-      act(() => tmuxCommand.killSession(pid, session.name))
-    }
+    Modal.confirm({
+      title: `Kill tmux session “${session.name}”?`,
+      content: 'This ends the session and all processes running inside it.',
+      okText: 'Kill session',
+      okType: 'danger',
+      onOk: () => act(() => tmuxCommand.killSession(pid, session.name))
+    })
   }
   const detachSession = async session => {
     if (activeTmuxSession !== session.name) return
@@ -78,27 +101,35 @@ export default auto(function TmuxPanel ({ store, cwd }) {
       const sequence = await getDetachSequence(pid)
       store.runQuickCommand(sequence, true)
       setTimeout(() => {
-        store.updateTab(pid, { tmuxSession: '' })
+        store.updateTab(pid, {
+          tmuxSession: '',
+          title: activeTab?.tmuxPreviousTitle || activeTab?.title,
+          tmuxPreviousTitle: ''
+        })
         refresh(true)
       }, 350)
     } catch (err) {
       setError(err.message || 'Could not detach this tmux client')
     }
   }
-  const createWindow = session => {
-    const name = ask(`New window in ${session.name} (optional name)`)
+  const createWindow = async session => {
+    const name = await ask(`New window in ${session.name} (optional name)`)
     if (name !== undefined) act(() => tmuxCommand.createWindow(pid, session.name, name, cwd))
   }
-  const renameWindow = (session, window) => {
-    const name = ask('Rename tmux window', window.name)
+  const renameWindow = async (session, window) => {
+    const name = await ask('Rename tmux window', window.name)
     if (name && name !== window.name) {
       act(() => tmuxCommand.renameWindow(pid, `${session.name}:${window.index}`, name))
     }
   }
   const killWindow = (session, windowItem) => {
-    if (window.confirm(`Kill tmux window “${windowItem.name}”?`)) {
-      act(() => tmuxCommand.killWindow(pid, `${session.name}:${windowItem.index}`))
-    }
+    Modal.confirm({
+      title: `Kill tmux window “${windowItem.name}”?`,
+      content: 'This ends every pane and process in the window.',
+      okText: 'Kill window',
+      okType: 'danger',
+      onOk: () => act(() => tmuxCommand.killWindow(pid, `${session.name}:${windowItem.index}`))
+    })
   }
   const toggle = key => setExpanded(prev => ({ ...prev, [key]: !prev[key] }))
 

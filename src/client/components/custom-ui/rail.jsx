@@ -6,8 +6,9 @@ import {
   SettingOutlined,
   PlusOutlined
 } from '@ant-design/icons'
+import addLocalTab from './add-local-tab.js'
 
-const addTab = () => window.store.addTab(undefined, undefined, 0)
+const addTab = () => addLocalTab()
 
 export default auto(function Rail (props) {
   const { store } = props
