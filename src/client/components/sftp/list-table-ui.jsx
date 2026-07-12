@@ -97,8 +97,13 @@ export default class FileListTable extends Component {
   componentDidUpdate (prevProps) {
     const prevList = prevProps.fileList
     const nextList = this.props.fileList
+    // Compare by path+name, not id: every directory listing regenerates
+    // random ids for all files, so id comparison treats a plain refresh
+    // (auto-refresh, sftp-follows-terminal) as new content and snaps the
+    // scroll back to top while the user is scrolling
+    const fileKey = f => `${f.path}/${f.name}`
     const contentChanged = prevList.length !== nextList.length ||
-      prevList.some((f, i) => f.id !== nextList[i].id)
+      prevList.some((f, i) => fileKey(f) !== fileKey(nextList[i]))
     if (contentChanged) {
       if (this.containerRef.current) {
         this.containerRef.current.scrollTop = 0

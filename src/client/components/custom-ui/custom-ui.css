@@ -747,7 +747,12 @@
 }
 
 /* SFTP hardcodes scroll height as `height - 194` (list-table-ui.jsx) for a
-   footer the custom UI omits; flex-stretch the chain to reclaim that gap. */
+   footer the custom UI omits; flex-stretch the chain to reclaim that gap.
+   antd 6 renders the Spin wrapper as .ant-spin (not .ant-spin-nested-loading);
+   match both so the chain doesn't break at the Spin and let the list grow
+   past the sidebar (which kills scrolling). */
+.cu-sidebar-sftp .sftp-section > .ant-spin,
+.cu-sidebar-sftp .sftp-section > .ant-spin > .ant-spin-container,
 .cu-sidebar-sftp .sftp-section > .ant-spin-nested-loading,
 .cu-sidebar-sftp .sftp-section > .ant-spin-nested-loading > .ant-spin-container,
 .cu-sidebar-sftp .sftp-panel,
