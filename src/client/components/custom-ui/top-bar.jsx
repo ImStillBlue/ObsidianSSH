@@ -112,6 +112,9 @@ export default auto(function TopBar () {
         <span className='cu-brand-name'>
           <span className='obs'>Obsidian</span><span className='ssh'>SSH</span>
         </span>
+        <span className='cu-brand-version' title='version / build commit'>
+          v{window.et.version.split('-')[0]}{window.et.commit ? ` (${window.et.commit})` : ''}
+        </span>
       </div>
       {controls}
     </div>

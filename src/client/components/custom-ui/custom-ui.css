@@ -79,6 +79,12 @@
 .cu-brand-name .obs { color: var(--obs-text); }
 .cu-brand-name .ssh { color: var(--obs-primary); }
 
+.cu-brand-version {
+  font-size: 11px;
+  color: var(--obs-text-muted, rgba(255, 255, 255, 0.4));
+  letter-spacing: 0.2px;
+}
+
 .cu-topbar-actions {
   display: flex;
   align-items: center;
