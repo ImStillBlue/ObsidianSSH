@@ -798,15 +798,19 @@
   -webkit-box-shadow: none;
 }
 
+/* thumb color matches the SFTP file list, which forces the theme blue
+   via `background-color var(--primary) !important` in sftp.styl */
 :root ::-webkit-scrollbar-thumb {
-  background: var(--obs-border);
+  background: var(--primary);
   border-radius: 5px;
   border: 2px solid transparent;
   background-clip: content-box;
 }
 
+/* !important so the hover lightening also wins over sftp.styl's
+   !important thumb color (higher specificity breaks the tie) */
 :root ::-webkit-scrollbar-thumb:hover {
-  background: var(--obs-text-muted);
+  background: color-mix(in srgb, var(--primary) 75%, white) !important;
   background-clip: content-box;
 }
 
