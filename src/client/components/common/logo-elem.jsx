@@ -18,6 +18,11 @@ export default function LogoElem () {
         <img src={logoPath1} className='iblock mwm-100 mg1r logo-img-small' />
       </sup>
       <Tag color='#08c' variant='solid'>{packInfo.version}</Tag>
+      {
+        window.et.commit
+          ? <Tag variant='outlined' className='font14'>{window.et.commit}</Tag>
+          : null
+      }
     </h1>
   )
 }

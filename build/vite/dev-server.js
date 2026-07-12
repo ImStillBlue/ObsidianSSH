@@ -6,14 +6,21 @@ import conf from './conf.js'
 import copy from 'json-deep-copy'
 import fs from 'fs'
 import path from 'path'
-import { spawn } from 'child_process'
+import { spawn, execSync } from 'child_process'
 import multer from 'multer'
 
 const devPort = env.DEV_PORT || 5570
 const host = env.DEV_HOST || '127.0.0.1'
 const h = `http://${host}:${devPort}`
+
+let commit = ''
+try {
+  commit = execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim()
+} catch (e) {}
+
 const base = {
   version: pack.version,
+  commit,
   isDev: !isProd,
   siteName: appName,
   customUI: env.CUSTOM_UI !== '0'

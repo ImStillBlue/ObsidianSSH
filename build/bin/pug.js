@@ -5,9 +5,18 @@
 const fs = require('fs')
 const pug = require('pug')
 const { resolve } = require('path')
+const { execSync } = require('child_process')
 const pack = require('../../package.json')
 const deepCopy = require('json-deep-copy')
 const { appName } = require('../../src/app/common/app-name')
+
+// Bake the git commit into the page so the About dialog can show
+// exactly which commit a build came from. Empty outside a git checkout
+// (e.g. building from a release tarball).
+let commit = ''
+try {
+  commit = execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim()
+} catch (e) {}
 
 const entryPug = resolve(
   __dirname,
@@ -20,6 +29,7 @@ const targetFilePath = resolve(
 const pugContent = fs.readFileSync(entryPug, 'utf-8')
 const data = {
   version: pack.version,
+  commit,
   siteName: appName,
   isDev: false,
   customUI: process.env.CUSTOM_UI !== '0'
