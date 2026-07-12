@@ -65,6 +65,17 @@
   font-weight 600
   letter-spacing .06em
   text-transform uppercase
+.macro-folder-create
+  display flex
+  gap 5px
+  padding 0 5px 8px
+  button
+    width 30px
+    border 1px solid var(--main-lighter)
+    border-radius 4px
+    color var(--text)
+    background transparent
+    cursor pointer
 .macro-folder
   width 100%
   height 34px
@@ -81,7 +92,7 @@
     background var(--hover-bg, rgba(255, 255, 255, .05))
   &.active
     color var(--primary)
-    background color-mix(in srgb, var(--primary) 16%, transparent)
+    background rgba(0, 136, 204, .16)
 .macro-folder-name
   min-width 0
   display flex
@@ -119,6 +130,10 @@
     min-height 34px
   .ant-form-item-label > label
     font-weight 500
+.macro-form-create-folder
+  display flex
+  gap 8px
+  margin-top 8px
 
 @media (max-width: 768px)
   .qm-flex

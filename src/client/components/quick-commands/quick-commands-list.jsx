@@ -4,6 +4,7 @@
 
 import List from '../setting-panel/list'
 import { PlusOutlined, CopyOutlined, FolderOutlined, FolderOpenOutlined, InboxOutlined } from '@ant-design/icons'
+import { Input } from 'antd'
 import classnames from 'classnames'
 import highlight from '../common/highlight'
 import QmTransport from './quick-command-transport'
@@ -34,6 +35,17 @@ export default class QuickCommandsList extends List {
 
   getLabels = () => {
     return this.props.store.quickCommandTags
+  }
+
+  handleCreateFolder = () => {
+    const name = (this.state.folderDraft || '').trim()
+    if (!name) return
+    this.props.store.setSettingItem({
+      id: '',
+      name: 'New macro',
+      labels: [name]
+    })
+    this.setState({ folderDraft: '' })
   }
 
   handleDragOver = e => {
@@ -153,6 +165,18 @@ export default class QuickCommandsList extends List {
     return (
       <div className='macro-folders'>
         <div className='macro-folders-heading'>Folders</div>
+        <div className='macro-folder-create'>
+          <Input
+            size='small'
+            value={this.state.folderDraft || ''}
+            placeholder='New folder + macro'
+            onChange={event => this.setState({ folderDraft: event.target.value })}
+            onPressEnter={this.handleCreateFolder}
+          />
+          <button type='button' onClick={this.handleCreateFolder} title='Create a folder with a new macro'>
+            <PlusOutlined />
+          </button>
+        </div>
         {folders.map(folder => (
           <button
             type='button'

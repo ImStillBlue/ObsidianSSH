@@ -30,7 +30,7 @@ export default function TabQuickCommands (props) {
         <QuickCommandsForm
           {...formProps}
           quickCommandTags={store.quickCommandTags}
-          key={settingItem.id}
+          key={`${settingItem.id}-${(settingItem.labels || []).join('|')}`}
         />
       </SettingCol>
     </div>

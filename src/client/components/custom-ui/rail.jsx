@@ -2,6 +2,7 @@ import { auto } from 'manate/react'
 import { Tooltip } from 'antd'
 import {
   CloudServerOutlined,
+  CodeOutlined,
   SettingOutlined,
   PlusOutlined
 } from '@ant-design/icons'
@@ -15,6 +16,7 @@ export default auto(function Rail (props) {
     store.storeAssign({ cuBookmarksOpen: !store.cuBookmarksOpen })
   }
   const openSettings = () => store.openSetting()
+  const openMacros = () => store.handleOpenQuickCommandsSetting()
 
   return (
     <div className='cu-rail'>
@@ -34,8 +36,13 @@ export default auto(function Rail (props) {
         </Tooltip>
       </div>
       <div className='cu-rail-bottom'>
+        <Tooltip title='Macro settings' placement='right' mouseEnterDelay={0.3}>
+          <button className='cu-rail-btn' onClick={openMacros} aria-label='Open macro settings'>
+            <CodeOutlined />
+          </button>
+        </Tooltip>
         <Tooltip title='Settings' placement='right' mouseEnterDelay={0.3}>
-          <button className='cu-rail-btn' onClick={openSettings}>
+          <button className='cu-rail-btn' onClick={openSettings} aria-label='Open settings'>
             <SettingOutlined />
           </button>
         </Tooltip>
