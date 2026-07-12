@@ -68,13 +68,24 @@ export default auto(function TmuxPanel ({ store, cwd }) {
     const name = await ask('New tmux session name')
     if (name) act(() => tmuxCommand.createSession(pid, name, cwd))
   }
-  const attach = name => {
-    store.updateTab(pid, {
-      tmuxSession: name,
-      tmuxPreviousTitle: activeTab?.tmuxPreviousTitle ?? activeTab?.title ?? '',
-      title: `tmux: ${name}`
-    })
-    store.runQuickCommand(attachCommand(name))
+  const attach = async name => {
+    if (activeTmuxSession === name) return
+    try {
+      if (activeTmuxSession) {
+        const sequence = await getDetachSequence(pid)
+        store.runQuickCommand(sequence, true)
+        await new Promise(resolve => setTimeout(resolve, 350))
+      }
+      store.runQuickCommand(attachCommand(name))
+      store.updateTab(pid, {
+        tmuxSession: name,
+        tmuxPreviousTitle: activeTab?.tmuxPreviousTitle || activeTab?.title || '',
+        title: `tmux: ${name}`
+      })
+      setTimeout(() => refresh(true), 350)
+    } catch (err) {
+      setError(err.message || 'Could not switch tmux sessions')
+    }
   }
   const openInTab = async (session, target) => {
     if (target) {
