@@ -87,6 +87,14 @@ module.exports = {
       return { k, v }
     }).filter(d => d)
   },
+  getInitLocale: () => {
+    const config = globalState.get('config')
+    const langMap = globalState.get('langMap')
+    return {
+      language: config?.language || 'en_us',
+      langMap: langMap || {}
+    }
+  },
   getConstants: () => {
     return {
       sep: require('path').sep,
