@@ -1,20 +1,13 @@
 import { Component } from 'manate/react/class-components'
 import { refsStatic, refs } from '../common/ref'
 import SuggestionItem from './cmd-item'
-import { aiSuggestionsCache } from '../../common/cache'
 import uid from '../../common/uid'
 import classnames from 'classnames'
-import {
-  LoadingOutlined
-} from '@ant-design/icons'
 
 export default class TerminalCmdSuggestions extends Component {
   state = {
     cursorPosition: {},
     showSuggestions: false,
-    loadingAiSuggestions: false,
-    aiSuggestions: [],
-    cmdIsDescription: false,
     reverse: false,
     cmd: '',
     passwordMode: false,
@@ -28,75 +21,8 @@ export default class TerminalCmdSuggestions extends Component {
 
   componentWillUnmount () {
     refsStatic.remove('terminal-suggestions')
-  }
-
-  parseAiSuggestions = (aiResponse) => {
-    try {
-      return JSON.parse(aiResponse.response).map(d => {
-        return {
-          command: d,
-          type: 'AI'
-        }
-      })
-    } catch (e) {
-      console.log('parseAiSuggestions error:', e)
-      return []
-    }
-  }
-
-  getAiSuggestions = async (event) => {
-    event.stopPropagation()
-    const { cmd } = this.state
-    if (window.store.aiConfigMissing()) {
-      window.store.toggleAIConfig()
-    }
-    this.setState({
-      loadingAiSuggestions: true
-    })
-    const {
-      config
-    } = window.store
-    const prompt = `give me max 5 command suggestions for user input: "${cmd}", return pure json format result only, no extra words, no markdown format, follow this format: ["command1","command2"...]`
-    const cached = aiSuggestionsCache.get(cmd)
-    if (cached) {
-      this.setState({
-        loadingAiSuggestions: false,
-        aiSuggestions: cached
-      })
-      return
-    }
-
-    const aiResponse = aiSuggestionsCache.get(prompt) || await window.pre.runGlobalAsync(
-      'AIchat',
-      prompt,
-      config.modelAI,
-      config.roleAI,
-      config.baseURLAI,
-      config.apiPathAI,
-      config.apiKeyAI,
-      false,
-      config.authHeaderNameAI
-    ).catch(
-      window.store.onError
-    )
-    if (cmd !== this.state.cmd) {
-      this.setState({
-        loadingAiSuggestions: false
-      })
-      return
-    }
-    if (aiResponse && aiResponse.error) {
-      this.setState({
-        loadingAiSuggestions: false
-      })
-      return window.store.onError(
-        new Error(aiResponse.error)
-      )
-    }
-    this.setState({
-      loadingAiSuggestions: false,
-      aiSuggestions: this.parseAiSuggestions(aiResponse, cmd)
-    })
+    document.removeEventListener('click', this.handleClickOutside)
+    document.removeEventListener('keydown', this.handleKeyDown, true)
   }
 
   openSuggestions = (cursorPosition, cmd) => {
@@ -183,18 +109,8 @@ export default class TerminalCmdSuggestions extends Component {
   closeSuggestions = () => {
     document.removeEventListener('click', this.handleClickOutside)
     document.removeEventListener('keydown', this.handleKeyDown, true)
-    const {
-      aiSuggestions
-    } = this.state
-    if (aiSuggestions.length) {
-      aiSuggestionsCache.set(this.state.cmd, aiSuggestions)
-      aiSuggestions.forEach(item => {
-        window.store.addCmdHistory(item.command, 'aiCmdHistory')
-      })
-    }
     this.setState({
       showSuggestions: false,
-      aiSuggestions: [],
       passwordMode: false,
       selectedIndex: -1,
       rawCursorPosition: null
@@ -215,17 +131,8 @@ export default class TerminalCmdSuggestions extends Component {
     }
   }
 
-  handleKeyDown = (event) => {
-    const { passwordMode } = this.state
-    const suggestions = passwordMode ? this.getPasswordSuggestions() : this.getSuggestions()
+  handlePasswordKeyDown = (event, suggestions) => {
     const len = suggestions.length
-
-    if (event.key === 'Escape') {
-      event.preventDefault()
-      event.stopPropagation()
-      this.closeSuggestions()
-      return
-    }
 
     if (event.key === 'ArrowDown') {
       event.preventDefault()
@@ -255,6 +162,79 @@ export default class TerminalCmdSuggestions extends Component {
     }
   }
 
+  handleKeyDown = (event) => {
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      event.stopPropagation()
+      this.closeSuggestions()
+      return
+    }
+
+    const { passwordMode } = this.state
+    if (passwordMode) {
+      return this.handlePasswordKeyDown(event, this.getPasswordSuggestions())
+    }
+
+    const suggestions = this.getSuggestions()
+    if (!suggestions.length) {
+      // Nothing to pick from: leave every key (including Tab) to the shell
+      return
+    }
+
+    if (event.key === 'Tab') {
+      // Tab cycles through matching suggestions, inserting each one
+      event.preventDefault()
+      event.stopPropagation()
+      this.cycleSuggestion(event.shiftKey ? -1 : 1, suggestions)
+      return
+    }
+
+    if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+      // Arrows belong to the shell (history cycling): close the
+      // dropdown and let the event through untouched
+      this.closeSuggestions()
+    }
+  }
+
+  cycleSuggestion = (dir, suggestions) => {
+    const len = suggestions.length
+    let idx = this.state.selectedIndex + dir
+    if (idx >= len) {
+      idx = 0
+    }
+    if (idx < 0) {
+      idx = len - 1
+    }
+    this.insertSuggestion(suggestions[idx])
+    this.setState({
+      selectedIndex: idx
+    }, this.scrollSelectedIntoView)
+  }
+
+  insertSuggestion = (item) => {
+    const { activeTabId } = window.store
+    const terminal = refs.get('term-' + activeTabId)
+    if (!terminal) {
+      return false
+    }
+    const { command } = item
+    // Read current input from buffer directly to avoid stale state
+    // (onData fires before echo, so this.state.cmd may lag behind)
+    const currentInput = terminal.getCurrentInput() || ''
+    let txt = ''
+    if (currentInput && command.startsWith(currentInput)) {
+      txt = command.slice(currentInput.length)
+    } else {
+      const pre = '\b'.repeat(currentInput.length)
+      txt = pre + command
+    }
+    terminal.attachAddon._sendData(txt)
+    // Update the terminal's currentInput to reflect the full command
+    terminal.setCurrentInput(command)
+    terminal.term.focus()
+    return true
+  }
+
   handleDelete = (item) => {
     window.store.deleteCmdHistory(item.command)
   }
@@ -282,21 +262,7 @@ export default class TerminalCmdSuggestions extends Component {
       return
     }
 
-    const { command } = item
-    // Read current input from buffer directly to avoid stale state
-    // (onData fires before echo, so this.state.cmd may lag behind)
-    const currentInput = terminal.getCurrentInput() || ''
-    let txt = ''
-    if (currentInput && command.startsWith(currentInput)) {
-      txt = command.slice(currentInput.length)
-    } else {
-      const pre = '\b'.repeat(currentInput.length)
-      txt = pre + command
-    }
-    terminal.attachAddon._sendData(txt)
-    // Update the terminal's currentInput to reflect the full command
-    terminal.setCurrentInput(command)
-    terminal.term.focus()
+    this.insertSuggestion(item)
     this.closeSuggestions()
   }
 
@@ -342,28 +308,19 @@ export default class TerminalCmdSuggestions extends Component {
       quick = []
     } = this.props.suggestions || {}
     const res = []
-    this.state.aiSuggestions
-      .forEach(item => {
-        if (!uniqueCommands.has(item.command)) {
-          uniqueCommands.add(item.command)
-        }
-        res.push({
-          id: uid(),
-          ...item
-        })
-      })
     this.processCommands(history, 'H', uniqueCommands, res)
     this.processCommands(batch, 'B', uniqueCommands, res)
     this.processCommands(quick, 'Q', uniqueCommands, res)
     return this.state.reverse ? res.reverse() : res
   }
 
-  getGhostText () {
+  getGhostText (suggestions) {
     const { rawCursorPosition, passwordMode, cmd, selectedIndex } = this.state
     if (!rawCursorPosition || passwordMode || !cmd) return null
-    const suggestions = this.getSuggestions()
-    const idx = selectedIndex >= 0 ? selectedIndex : 0
-    const top = suggestions[idx]
+    // Once the user starts cycling with Tab the suggestion is already
+    // inserted into the terminal, so a ghost preview would be stale
+    if (selectedIndex >= 0) return null
+    const top = suggestions[0]
     if (!top || !top.command.startsWith(cmd)) return null
     return top.command.slice(cmd.length)
   }
@@ -390,55 +347,18 @@ export default class TerminalCmdSuggestions extends Component {
     return <div className='terminal-ghost-text' style={style}>{ghostText}</div>
   }
 
-  renderAIIcon () {
-    const e = window.translate
-    const {
-      loadingAiSuggestions
-    } = this.state
-    if (loadingAiSuggestions) {
-      return (
-        <>
-          <LoadingOutlined /> {e('getAiSuggestions')}
-        </>
-      )
-    }
-    const aiProps = {
-      onClick: this.getAiSuggestions,
-      className: 'pointer'
-    }
-    return (
-      <div {...aiProps}>
-        {e('getAiSuggestions')}
-      </div>
-    )
-  }
-
-  renderSticky (pos) {
-    const {
-      reverse
-    } = this.state
-    if (
-      (pos === 'top' && !reverse) ||
-      (pos === 'bottom' && reverse)
-    ) {
-      return null
-    }
-    return (
-      <div className='terminal-suggestions-sticky'>
-        {this.renderAIIcon()}
-      </div>
-    )
-  }
-
   render () {
     const { showSuggestions, cursorPosition, reverse, passwordMode } = this.state
-    const ghostText = this.getGhostText()
     if (!showSuggestions) {
-      return this.renderGhostText(ghostText)
+      return null
     }
     const suggestions = passwordMode
       ? this.getPasswordSuggestions()
       : this.getSuggestions()
+    if (!suggestions.length) {
+      return null
+    }
+    const ghostText = passwordMode ? null : this.getGhostText(suggestions)
     const cls = classnames('terminal-suggestions-wrap', {
       reverse
     })
@@ -446,7 +366,6 @@ export default class TerminalCmdSuggestions extends Component {
       <>
         {this.renderGhostText(ghostText)}
         <div className={cls} style={cursorPosition}>
-          {!passwordMode && this.renderSticky('top')}
           <div className='terminal-suggestions-list'>
             {
               suggestions.map((item, index) => {
@@ -462,7 +381,6 @@ export default class TerminalCmdSuggestions extends Component {
               })
             }
           </div>
-          {!passwordMode && this.renderSticky('bottom')}
         </div>
       </>
     )

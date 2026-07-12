@@ -28,54 +28,59 @@ describe('Terminal Suggestions Dropdown', function () {
     await electronApp.close()
   })
 
-  it('should show suggestions based on command history and handle deletion', async function () {
+  it('should show suggestions based on command history and close on arrow keys', async function () {
     await delay(1500)
-    // Type the partial command and check initial suggestions count
-    const partialCommand = 'test-unique'
-    await client.keyboard.type(partialCommand)
-    await delay(100)
-    await client.keyboard.press('ArrowRight')
-    await delay(100)
-    await client.keyboard.press('ArrowRight')
-
-    // Verify suggestions panel is visible
     const suggestionElement = await client.locator('.terminal-suggestions-wrap').first()
-    await expect(suggestionElement).toBeVisible()
 
-    // Count initial suggestions for our partial command
-    const initialSuggestions = await client.locator('.suggestion-item').count()
-
-    // Continue typing to make it a unique command
-    await client.keyboard.type('-command-' + Date.now())
-
-    // Verify AI suggestions button
-    const aiSuggestionsButton = await client.locator('.terminal-suggestions-sticky div').first()
-    await expect(aiSuggestionsButton).toBeVisible()
-    await expect(aiSuggestionsButton).toHaveText('Get AI suggestions')
-
-    // Press Enter to execute command
+    // Run a command so it lands in history
+    const uniqueCommand = 'test-unique-command-' + Date.now()
+    await client.keyboard.type(uniqueCommand)
+    await delay(300)
     await client.keyboard.press('Enter')
-    await expect(suggestionElement).toBeHidden()
-
     await delay(1000)
 
-    // Type the same partial command again
-    await client.keyboard.type(partialCommand)
-    await delay(100)
-    await client.keyboard.press('ArrowRight')
-    await delay(100)
-    await client.keyboard.press('ArrowRight')
-
-    // Verify suggestions are visible again
-    // The suggestions list should filter commands that start with the partial input
+    // Type the partial command again - history suggestion should appear
+    await client.keyboard.type('test-unique')
+    await delay(500)
     await expect(suggestionElement).toBeVisible()
+    const count = await client.locator('.suggestion-item').count()
+    expect(count).toBeGreaterThan(0)
 
-    // Verify suggestion count increased for the same partial command
-    const newSuggestionsCount = await client.locator('.suggestion-item').count()
-    expect(newSuggestionsCount).toBeGreaterThan(initialSuggestions)
+    // Arrow keys are passed to the shell (history cycling) and close the dropdown
+    await client.keyboard.press('ArrowUp')
+    await delay(300)
+    await expect(suggestionElement).toBeHidden()
 
-    // Press Enter to close suggestions
+    // Clear the line
+    await client.keyboard.press('Control+C')
+    await delay(500)
+
+    // Type partial again, Enter should close the dropdown too
+    await client.keyboard.type('test-unique')
+    await delay(500)
+    await expect(suggestionElement).toBeVisible()
     await client.keyboard.press('Enter')
     await expect(suggestionElement).toBeHidden()
+  })
+
+  it('should complete command with Tab', async function () {
+    await delay(1500)
+    const suggestionElement = await client.locator('.terminal-suggestions-wrap').first()
+
+    // Seed history directly
+    await client.evaluate(() => {
+      window.store.addCmdHistory('echo tab-complete-test')
+    })
+    await delay(300)
+
+    await client.keyboard.type('echo tab-c')
+    await delay(500)
+    await expect(suggestionElement).toBeVisible()
+
+    // Tab inserts the highlighted suggestion into the terminal
+    await client.keyboard.press('Tab')
+    await delay(300)
+    const selected = await client.locator('.suggestion-item.selected').count()
+    expect(selected).toBe(1)
   })
 })

@@ -1092,17 +1092,33 @@ class Term extends Component {
       }
       return
     }
-    if (this.props.config.showCmdSuggestions || window.et?.customUI) {
+    if (!this.props.config.showCmdSuggestions && !window.et?.customUI) {
+      this.closeSuggestions()
+      return
+    }
+    // Escape sequences (arrow keys, home/end...) and control chars mean the
+    // shell is driving the line (history cycling etc.) - keep the dropdown
+    // out of the way instead of reopening it with stale input.
+    // Backspace (\x7f) still updates the filter.
+    const isPrintable = d.length === 1
+      ? d >= ' '
+      : !d.includes('\x1b')
+    if (!isPrintable || d === '\r' || d === '\n') {
+      this.closeSuggestions()
+      return
+    }
+    // onData fires before the shell echoes the char back, so wait a tick
+    // for the buffer to update before reading the current input from it
+    clearTimeout(this.timers.suggestion)
+    this.timers.suggestion = setTimeout(() => {
       const data = this.getCurrentInput()
-      if (data && d !== '\r' && d !== '\n') {
+      if (data) {
         const cursorPos = this.getCursorPosition()
         this.openSuggestions(cursorPos, data)
       } else {
         this.closeSuggestions()
       }
-    } else {
-      this.closeSuggestions()
-    }
+    }, 60)
   }
 
   loadRenderer = async (term, config) => {
