@@ -3,9 +3,10 @@ import { PlusOutlined } from '@ant-design/icons'
 import TreeList from '../tree-list/tree-list'
 import getInitItem from '../../common/init-setting-item'
 import { settingMap } from '../../common/constants'
+import TmuxPanel from '../tmux/tmux-panel.jsx'
 
 export default auto(function BookmarksSidebar (props) {
-  const { store } = props
+  const { store, cwds } = props
   const {
     listStyle,
     leftSidebarWidth,
@@ -52,6 +53,12 @@ export default auto(function BookmarksSidebar (props) {
       </div>
       <div className='cu-bookmarks-tree'>
         <TreeList {...treeProps} />
+      </div>
+      <div className='cu-bookmarks-tmux'>
+        <TmuxPanel
+          store={store}
+          cwd={cwds[store.activeTabId] || ''}
+        />
       </div>
     </div>
   )

@@ -840,8 +840,8 @@
   overflow: hidden;
 }
 
-.cu-sidebar-tmux {
-  flex: 0 1 42%;
+.cu-bookmarks-tmux {
+  flex: 0 1 45%;
   min-height: 120px;
   border-top: 1px solid var(--obs-border);
   overflow: hidden;

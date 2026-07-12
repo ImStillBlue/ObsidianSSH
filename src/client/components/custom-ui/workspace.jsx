@@ -39,7 +39,7 @@ export default auto(function Workspace (props) {
       >
         <Rail store={store} />
         <div className={leftCls}>
-          <BookmarksSidebar store={store} />
+          <BookmarksSidebar store={store} cwds={cwds} />
         </div>
       </div>
       <SessionHost store={store} setCwd={setCwd} />
