@@ -83,6 +83,33 @@ export const tmuxCommand = {
   selectPane: (pid, target) => runCmd(pid, `tmux select-pane -t ${quote(target)}`)
 }
 
+function keySequence (key) {
+  if (!key || key === 'None') return ''
+  if (key.length === 1) return key
+  if (key === 'Space') return ' '
+  if (key === 'Enter') return '\r'
+  if (key === 'Escape') return '\x1b'
+  if (key === 'C-Space' || key === 'C-@') return '\x00'
+  if (key === 'C-?') return '\x7f'
+  if (key.startsWith('M-')) {
+    return '\x1b' + keySequence(key.slice(2))
+  }
+  if (key.startsWith('C-') && key.length === 3) {
+    return String.fromCharCode(key.charCodeAt(2) & 31)
+  }
+  return ''
+}
+
+export async function getDetachSequence (pid) {
+  const query = "printf '%s\\t' \"$(tmux show-options -gv prefix)\"; tmux list-keys -T prefix | awk '$5 == \"detach-client\" { print $4; exit }'"
+  const [prefix, detachKey] = (await runCmd(pid, query)).trim().split('\t')
+  const sequence = keySequence(prefix) + keySequence(detachKey)
+  if (!sequence) {
+    throw new Error('Could not determine the tmux detach shortcut')
+  }
+  return sequence
+}
+
 export function attachCommand (session) {
   return `tmux attach-session -t ${quote(session)}`
 }

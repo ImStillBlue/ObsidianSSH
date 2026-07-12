@@ -11,7 +11,7 @@ import {
   ReloadOutlined,
   SelectOutlined
 } from '@ant-design/icons'
-import { attachCommand, inspectTmux, tmuxCommand } from './tmux-api'
+import { attachCommand, getDetachSequence, inspectTmux, tmuxCommand } from './tmux-api'
 
 export default auto(function TmuxPanel ({ store, cwd }) {
   const pid = store.activeTabId
@@ -72,13 +72,18 @@ export default auto(function TmuxPanel ({ store, cwd }) {
       act(() => tmuxCommand.killSession(pid, session.name))
     }
   }
-  const detachSession = session => {
+  const detachSession = async session => {
     if (activeTmuxSession !== session.name) return
-    store.runQuickCommand('tmux detach-client')
-    setTimeout(() => {
-      store.updateTab(pid, { tmuxSession: '' })
-      refresh(true)
-    }, 350)
+    try {
+      const sequence = await getDetachSequence(pid)
+      store.runQuickCommand(sequence, true)
+      setTimeout(() => {
+        store.updateTab(pid, { tmuxSession: '' })
+        refresh(true)
+      }, 350)
+    } catch (err) {
+      setError(err.message || 'Could not detach this tmux client')
+    }
   }
   const createWindow = session => {
     const name = ask(`New window in ${session.name} (optional name)`)
