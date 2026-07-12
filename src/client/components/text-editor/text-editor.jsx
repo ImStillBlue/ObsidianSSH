@@ -31,12 +31,15 @@ export default class TextEditor extends PureComponent {
 
   setStateProxy = (state, cb) => {
     if (state && typeof state.file !== 'undefined') {
-      window.store.showEditor = !!state.file
+      window.store.showEditor = !!state.file && !state.systemEditor
     }
     return this.setState(state, cb)
   }
 
   openEditor = (data) => {
+    if (this.state.id && this.state.id !== data.id) {
+      refs.get(this.state.id)?.removeFileEditEvent()
+    }
     this.setStateProxy(data)
     if (data.id && data.file) {
       this.fetchText(data)
@@ -173,9 +176,13 @@ export default class TextEditor extends PureComponent {
       file,
       path,
       loading,
-      text
+      text,
+      systemEditor
     } = this.state
     if (!file) {
+      return null
+    }
+    if (systemEditor && !window.et.isWebApp) {
       return null
     }
     const title = `${e('edit')} ${e('remote')} ${e('file')}: ${path}`

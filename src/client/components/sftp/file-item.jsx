@@ -811,7 +811,9 @@ export default class FileSection extends React.Component {
       data.file = null
       data.text = ''
     }
-    this.clearRef()
+    if (!noClose) {
+      this.clearRef()
+    }
     this.editor?.setState(data)
     if (r && !noClose) {
       this.props[`${type}List`]()
