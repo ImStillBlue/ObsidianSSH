@@ -258,11 +258,14 @@ function initIpc () {
       width: 32,
       height: 32
     })
-    event.sender.startDrag({
+    const dragItem = {
       file: safeFiles[0],
-      files: safeFiles,
       icon: dragIcon
-    })
+    }
+    if (safeFiles.length > 1) {
+      dragItem.files = safeFiles
+    }
+    event.sender.startDrag(dragItem)
   })
 }
 

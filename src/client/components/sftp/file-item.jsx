@@ -299,15 +299,32 @@ export default class FileSection extends React.Component {
       !window.et.isWebApp &&
       !e.shiftKey
     ) {
-      e.preventDefault()
       const preparation = this.prepareRemoteFileDrag(dragFiles)
       if (preparation.status === 'ready') {
-        // This must happen synchronously in dragstart for Linux/Wayland file
-        // managers (including Dolphin) to accept the native file payload.
-        window.api.startFileDrag(preparation.localFiles)
+        if (window.pre.isLinux) {
+          // Qt file managers such as Dolphin consume local file references as
+          // text/uri-list. Chromium's generic native payload can be rejected
+          // by the XWayland bridge with a forbidden-drop cursor.
+          const fileUrls = preparation.localFiles.map(window.api.pathToFileUrl)
+          const uriList = fileUrls.join('\r\n')
+          e.dataTransfer.effectAllowed = 'copy'
+          e.dataTransfer.setData('text/uri-list', uriList)
+          e.dataTransfer.setData('text/plain', uriList)
+          if (fileUrls.length === 1) {
+            e.dataTransfer.setData(
+              'DownloadURL',
+              `application/octet-stream:${dragFiles[0].name}:${fileUrls[0]}`
+            )
+          }
+        } else {
+          e.preventDefault()
+          window.api.startFileDrag(preparation.localFiles)
+        }
       } else if (preparation.status === 'error') {
+        e.preventDefault()
         window.store.onError(preparation.error)
       } else {
+        e.preventDefault()
         preparation.promise
           .then(() => message.info('File prepared. Drag it again to copy it out.'))
           .catch(window.store.onError)
