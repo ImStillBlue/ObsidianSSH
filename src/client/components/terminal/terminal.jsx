@@ -1109,6 +1109,33 @@ class Term extends Component {
     }, 60)
   }
 
+  _debouncedOpenSuggestions = debounce(function () {
+    const data = this.getCurrentInput()
+    if (!data) {
+      this.closeSuggestions()
+      return
+    }
+    const cursorPos = this.getCursorPosition()
+    this.openSuggestions(cursorPos, data)
+  }, 80)
+
+  /**
+   * Called by AttachAddonCustom after data is written to the terminal buffer.
+   * This fires after server echo arrives, so getCurrentInput() reflects the
+   * latest state. We trigger a debounced suggestion refresh so the dropdown
+   * updates correctly after backspace, delete, and other edits that rely on
+   * server-side echo to update the buffer.
+   */
+  onTerminalWrite = () => {
+    if (!this.props.config.showCmdSuggestions && !window.et?.customUI) {
+      return
+    }
+    const suggestions = refsStatic.get('terminal-suggestions')
+    if (suggestions?.state?.showSuggestions && !suggestions?.state?.passwordMode) {
+      this._debouncedOpenSuggestions()
+    }
+  }
+
   loadRenderer = async (term, config) => {
     // xterm 6.x: only the built-in DOM renderer and the WebGL addon exist
     // (the canvas renderer addon was removed in 6.x). 'dom' = no addon loaded
