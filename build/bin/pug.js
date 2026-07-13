@@ -27,12 +27,22 @@ const targetFilePath = resolve(
   '../../work/app/assets/index.html'
 )
 const pugContent = fs.readFileSync(entryPug, 'utf-8')
+const defaultAIPreset = {
+  baseURLAI: 'https://ai.electerm.org/api/ai',
+  apiPathAI: '/chat/completions',
+  modelAI: 'mistral-small-latest',
+  authHeaderNameAI: 'Authorization: Bearer',
+  id: 'ai.electerm.org',
+  nameAI: 'ai.electerm.org(default free)'
+}
+
 const data = {
   version: pack.version,
   commit,
   siteName: appName,
   isDev: false,
-  customUI: process.env.CUSTOM_UI !== '0'
+  customUI: process.env.CUSTOM_UI !== '0',
+  defaultAIPreset
 }
 const htmlContent = pug.render(pugContent, {
   filename: entryPug,

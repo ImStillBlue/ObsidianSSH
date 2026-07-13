@@ -18,12 +18,22 @@ try {
   commit = execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim()
 } catch (e) {}
 
+const defaultAIPreset = {
+  baseURLAI: 'https://ai.electerm.org/api/ai',
+  apiPathAI: '/chat/completions',
+  modelAI: 'mistral-small-latest',
+  authHeaderNameAI: 'Authorization: Bearer',
+  id: 'ai.electerm.org',
+  nameAI: 'ai.electerm.org(default free)'
+}
+
 const base = {
   version: pack.version,
   commit,
   isDev: !isProd,
   siteName: appName,
-  customUI: env.CUSTOM_UI !== '0'
+  customUI: env.CUSTOM_UI !== '0',
+  defaultAIPreset
 }
 
 function handleIndex (req, res) {
