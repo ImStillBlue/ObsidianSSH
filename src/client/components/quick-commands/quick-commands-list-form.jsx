@@ -101,6 +101,7 @@ export default function renderQm (form) {
             className='qm-action-select'
             options={[
               { value: 'command', label: 'Command' },
+              { value: 'changeDirectory', label: 'Change directory' },
               { value: 'openRemoteFile', label: 'Open remote file' }
             ]}
           />
@@ -113,7 +114,16 @@ export default function renderQm (form) {
         >
           {({ getFieldValue }) => {
             const action = getFieldValue(['commands', field.name, 'action']) || 'command'
-            const fieldName = action === 'openRemoteFile' ? 'remotePath' : 'command'
+            const fieldName = action === 'openRemoteFile'
+              ? 'remotePath'
+              : action === 'changeDirectory'
+                ? 'directory'
+                : 'command'
+            const placeholder = action === 'openRemoteFile'
+              ? 'Remote file path'
+              : action === 'changeDirectory'
+                ? 'Directory path'
+                : 'Enter a terminal command'
             return (
               <FormItem
                 name={[field.name, fieldName]}
@@ -122,7 +132,7 @@ export default function renderQm (form) {
               >
                 <Input.TextArea
                   autoSize={{ minRows: 1 }}
-                  placeholder={action === 'openRemoteFile' ? 'Remote file path' : 'Enter a terminal command'}
+                  placeholder={placeholder}
                   className='compact-input qm-input'
                   onFocus={() => {
                     focused.current = i

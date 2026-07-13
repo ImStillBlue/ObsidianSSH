@@ -16,7 +16,12 @@ import deepCopy from 'json-deep-copy'
 import templates from './templates'
 import HelpIcon from '../common/help-icon'
 import { PlusOutlined } from '@ant-design/icons'
-import { decodeOpenRemoteFile, encodeOpenRemoteFile } from '../../common/macro-actions'
+import {
+  decodeChangeDirectory,
+  decodeOpenRemoteFile,
+  encodeChangeDirectory,
+  encodeOpenRemoteFile
+} from '../../common/macro-actions'
 
 const FormItem = Form.Item
 const { Option } = Select
@@ -59,16 +64,17 @@ export default function QuickCommandForm (props) {
       commands,
       inputOnly,
       labels,
-      startDirectory,
       shortcut
     } = res
     const nativeCommands = (commands || []).map(item => {
-      const { action, remotePath, ...nativeItem } = item
+      const { action, directory, remotePath, ...nativeItem } = item
       return {
         ...nativeItem,
         command: action === 'openRemoteFile'
           ? encodeOpenRemoteFile(remotePath || '')
-          : nativeItem.command
+          : action === 'changeDirectory'
+            ? encodeChangeDirectory(directory || '')
+            : nativeItem.command
       }
     })
     const update = deepCopy({
@@ -76,7 +82,7 @@ export default function QuickCommandForm (props) {
       commands: nativeCommands,
       inputOnly,
       labels,
-      startDirectory,
+      startDirectory: '',
       shortcut
     })
     const update1 = {
@@ -105,11 +111,24 @@ export default function QuickCommandForm (props) {
       delay: 100
     }]
   }
+  if (initialValues.startDirectory) {
+    initialValues.commands.unshift({
+      command: encodeChangeDirectory(initialValues.startDirectory),
+      id: generate(),
+      delay: 100
+    })
+  }
   initialValues.commands = initialValues.commands.map(item => {
     const remotePath = decodeOpenRemoteFile(item.command)
+    const directory = decodeChangeDirectory(item.command)
     return {
       ...item,
-      action: remotePath ? 'openRemoteFile' : 'command',
+      action: remotePath
+        ? 'openRemoteFile'
+        : directory
+          ? 'changeDirectory'
+          : 'command',
+      directory,
       remotePath
     }
   })
@@ -163,13 +182,6 @@ export default function QuickCommandForm (props) {
           <InputAutoFocus />
         </FormItem>
         {renderQm(form)}
-        <FormItem
-          name='startDirectory'
-          label='Start directory'
-          extra='The terminal changes to this directory before running the first step.'
-        >
-          <Input placeholder='/path/to/project (optional)' />
-        </FormItem>
         <FormItem
           label='Folders'
           extra='Choose where this macro appears. Type a new name to create a folder.'

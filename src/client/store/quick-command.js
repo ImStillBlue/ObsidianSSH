@@ -16,7 +16,10 @@ import templates from '../components/quick-commands/templates'
 import { readClipboardAsync } from '../common/clipboard'
 import sanitizeFilename from '../common/sanitize-filename'
 import normalizeRemotePath from '../common/normalize-remote-path'
-import { decodeOpenRemoteFile } from '../common/macro-actions'
+import {
+  decodeChangeDirectory,
+  decodeOpenRemoteFile
+} from '../common/macro-actions'
 
 const externalMacroEditors = new Map()
 
@@ -129,7 +132,8 @@ export default Store => {
             ]
           : []
         )
-    if (qm?.startDirectory) {
+    let currentDirectory = qm?.startDirectory || ''
+    if (currentDirectory) {
       store.cdTerminal(qm.startDirectory)
       await delay(150)
     }
@@ -137,11 +141,20 @@ export default Store => {
       if (typeof q?.command !== 'string' || !q.command.trim()) {
         continue
       }
+      const directory = decodeChangeDirectory(q.command)
+      if (directory) {
+        await delay(q.delay || 100)
+        store.cdTerminal(directory)
+        currentDirectory = directory.startsWith('/') || !currentDirectory
+          ? normalizeRemotePath(directory)
+          : normalizeRemotePath(`${currentDirectory}/${directory}`)
+        continue
+      }
       const remoteFile = decodeOpenRemoteFile(q.command)
       if (remoteFile) {
-        const remotePath = remoteFile.startsWith('/') || !qm.startDirectory
+        const remotePath = remoteFile.startsWith('/') || !currentDirectory
           ? remoteFile
-          : normalizeRemotePath(`${qm.startDirectory}/${remoteFile}`)
+          : normalizeRemotePath(`${currentDirectory}/${remoteFile}`)
         await delay(q.delay || 100)
         await store.openRemoteFileInSystemEditor(remotePath)
         continue

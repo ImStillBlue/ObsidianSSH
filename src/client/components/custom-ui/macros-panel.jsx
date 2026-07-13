@@ -1,5 +1,5 @@
 import { auto } from 'manate/react'
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Input, InputNumber, Select } from 'antd'
 import {
   ArrowLeftOutlined,
@@ -12,7 +12,12 @@ import {
   PlayCircleOutlined
 } from '@ant-design/icons'
 import generate from '../../common/uid'
-import { decodeOpenRemoteFile, encodeOpenRemoteFile } from '../../common/macro-actions'
+import {
+  decodeChangeDirectory,
+  decodeOpenRemoteFile,
+  encodeChangeDirectory,
+  encodeOpenRemoteFile
+} from '../../common/macro-actions'
 
 const UNLABELED = '__unlabeled__'
 const ALL = '__all__'
@@ -26,8 +31,6 @@ export default auto(function MacrosPanel (props) {
   const [folderName, setFolderName] = useState('')
   const [name, setName] = useState('')
   const [macroFolder, setMacroFolder] = useState('')
-  const [startDirectory, setStartDirectory] = useState(cwd || '')
-  const [startDirectoryTouched, setStartDirectoryTouched] = useState(false)
   const [commands, setCommands] = useState([])
   const [command, setCommand] = useState('')
   const [commandDelay, setCommandDelay] = useState(100)
@@ -37,12 +40,6 @@ export default auto(function MacrosPanel (props) {
     .slice()
     .sort((a, b) => new Date(b.lastUseTime) - new Date(a.lastUseTime))
     .slice(0, 8)
-
-  useEffect(() => {
-    if (creating && !startDirectoryTouched && cwd) {
-      setStartDirectory(cwd)
-    }
-  }, [creating, cwd, startDirectoryTouched])
 
   const folders = useMemo(() => {
     const counts = new Map()
@@ -93,7 +90,12 @@ export default auto(function MacrosPanel (props) {
     const commandSummary = commands
       .map(item => {
         const remoteFile = decodeOpenRemoteFile(item.command)
-        return remoteFile ? `open ${remoteFile}` : item.command
+        const directory = decodeChangeDirectory(item.command)
+        return remoteFile
+          ? `open ${remoteFile}`
+          : directory
+            ? `cd ${directory}`
+            : item.command
       })
       .filter(Boolean)
       .join(' ; ')
@@ -115,9 +117,9 @@ export default auto(function MacrosPanel (props) {
   const openCreator = () => {
     setName('')
     setMacroFolder(folder && ![ALL, UNLABELED].includes(folder) ? folder : '')
-    setStartDirectory(cwd || '')
-    setStartDirectoryTouched(false)
-    setCommands([])
+    setCommands(cwd
+      ? [{ command: encodeChangeDirectory(cwd), delay: 100 }]
+      : [])
     setCommand('')
     setCommandDelay(100)
     setStepType('command')
@@ -127,7 +129,11 @@ export default auto(function MacrosPanel (props) {
     const value = cmd.trim()
     if (!value) return
     setCommands(prev => [...prev, {
-      command: type === 'openRemoteFile' ? encodeOpenRemoteFile(value) : value,
+      command: type === 'openRemoteFile'
+        ? encodeOpenRemoteFile(value)
+        : type === 'changeDirectory'
+          ? encodeChangeDirectory(value)
+          : value,
       delay: Number(commandDelayValue) || 100
     }])
     setCommand('')
@@ -138,12 +144,12 @@ export default auto(function MacrosPanel (props) {
     )))
   }
   const saveMacro = () => {
-    if (!name.trim() || (!startDirectory.trim() && commands.length === 0)) return
+    if (!name.trim() || commands.length === 0) return
     store.addQuickCommand({
       id: generate(),
       name: name.trim(),
       labels: macroFolder.trim() ? [macroFolder.trim()] : [],
-      startDirectory: startDirectory.trim(),
+      startDirectory: '',
       commands: commands.map(item => ({
         id: generate(),
         command: item.command,
@@ -227,42 +233,24 @@ export default auto(function MacrosPanel (props) {
                 showSearch
                 className='cu-macro-folder-select'
               />
-              <div className='cu-macro-start-directory'>
-                <div className='cu-macro-maker-label'>Start directory</div>
-                <div className='cu-macro-path-input'>
-                  <Input
-                    value={startDirectory}
-                    onChange={event => {
-                      setStartDirectory(event.target.value)
-                      setStartDirectoryTouched(true)
-                    }}
-                    placeholder='/path/to/project (optional)'
-                  />
-                  {cwd && (
-                    <button
-                      onClick={() => {
-                        setStartDirectory(cwd)
-                        setStartDirectoryTouched(true)
-                      }}
-                      title={cwd}
-                    >Current
-                    </button>
-                  )}
-                </div>
-                <small>A directory by itself is a valid macro. Commands run after changing directory.</small>
-              </div>
               <div className='cu-macro-maker-label'>Steps</div>
               {commands.map((item, index) => (
                 <div className='cu-macro-draft-step' key={`${item.command}-${index}`}>
                   <span className='cu-macro-step-type'>
-                    {decodeOpenRemoteFile(item.command) ? 'Open remote file' : 'Terminal command'}
+                    {decodeOpenRemoteFile(item.command)
+                      ? 'Open remote file'
+                      : decodeChangeDirectory(item.command)
+                        ? 'Change directory'
+                        : 'Terminal command'}
                   </span>
                   <Input.TextArea
-                    value={decodeOpenRemoteFile(item.command) || item.command}
+                    value={decodeOpenRemoteFile(item.command) || decodeChangeDirectory(item.command) || item.command}
                     onChange={event => updateCommand(index, {
                       command: decodeOpenRemoteFile(item.command)
                         ? encodeOpenRemoteFile(event.target.value)
-                        : event.target.value
+                        : decodeChangeDirectory(item.command)
+                          ? encodeChangeDirectory(event.target.value)
+                          : event.target.value
                     })}
                     autoSize={{ minRows: 1, maxRows: 3 }}
                   />
@@ -284,9 +272,15 @@ export default auto(function MacrosPanel (props) {
               <div className='cu-macro-command-add'>
                 <Select
                   value={stepType}
-                  onChange={setStepType}
+                  onChange={value => {
+                    setStepType(value)
+                    if (value === 'changeDirectory' && !command.trim() && cwd) {
+                      setCommand(cwd)
+                    }
+                  }}
                   options={[
                     { value: 'command', label: 'Terminal command' },
+                    { value: 'changeDirectory', label: 'Change directory' },
                     { value: 'openRemoteFile', label: 'Open remote file' }
                   ]}
                 />
@@ -299,7 +293,11 @@ export default auto(function MacrosPanel (props) {
                       addCommand(command)
                     }
                   }}
-                  placeholder={stepType === 'openRemoteFile' ? 'Remote file path…' : 'Type a command…'}
+                  placeholder={stepType === 'openRemoteFile'
+                    ? 'Remote file path…'
+                    : stepType === 'changeDirectory'
+                      ? 'Directory path…'
+                      : 'Type a command…'}
                   autoSize={{ minRows: 1, maxRows: 3 }}
                 />
                 <InputNumber
@@ -324,7 +322,7 @@ export default auto(function MacrosPanel (props) {
               )}
               <div className='cu-macro-maker-actions'>
                 <button onClick={() => setCreating(false)}>Cancel</button>
-                <button className='primary' disabled={!name.trim() || (!startDirectory.trim() && commands.length === 0)} onClick={saveMacro}>
+                <button className='primary' disabled={!name.trim() || commands.length === 0} onClick={saveMacro}>
                   <CheckOutlined /> Save macro
                 </button>
               </div>
