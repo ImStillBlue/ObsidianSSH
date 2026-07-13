@@ -1107,33 +1107,48 @@
   text-transform: uppercase;
 }
 
-.cu-macro-cwd {
+.cu-macro-start-directory {
   display: flex;
-  gap: 8px;
-  align-items: flex-start;
+  flex-direction: column;
+  gap: 6px;
   padding: 7px;
   border: 1px solid var(--obs-border);
   border-radius: 4px;
-  cursor: pointer;
+  background: var(--obs-bg);
 }
 
-.cu-macro-cwd span {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  font-size: 12px;
+.cu-macro-start-directory .cu-macro-maker-label {
+  margin-top: 0;
 }
 
-.cu-macro-cwd small {
-  overflow: hidden;
+.cu-macro-start-directory > small {
   color: var(--obs-text-muted);
+  font-size: 10px;
+  line-height: 14px;
+}
+
+.cu-macro-path-input {
+  display: flex;
+  gap: 5px;
+}
+
+.cu-macro-path-input input {
   font-family: var(--font-mono, monospace);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: 11px;
+}
+
+.cu-macro-path-input button {
+  border: 1px solid var(--obs-border);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--obs-text-secondary);
+  cursor: pointer;
+  font-size: 10px;
 }
 
 .cu-macro-draft-step {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
   min-height: 30px;
@@ -1143,12 +1158,10 @@
   background: var(--obs-bg);
 }
 
-.cu-macro-draft-step code {
-  flex: 1;
-  overflow: hidden;
+.cu-macro-draft-step textarea {
+  flex: 1 0 calc(100% - 28px);
+  font-family: var(--font-mono, monospace);
   font-size: 11px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .cu-macro-draft-step button,
@@ -1161,13 +1174,29 @@
 
 .cu-macro-command-add {
   display: flex;
+  flex-wrap: wrap;
   gap: 5px;
   align-items: center;
 }
 
 .cu-macro-command-add textarea {
+  flex: 1 0 100%;
   font-family: var(--font-mono, monospace);
   font-size: 11px;
+}
+
+.cu-macro-command-add .ant-input-number,
+.cu-macro-step-delay .ant-input-number {
+  width: 108px;
+}
+
+.cu-macro-step-delay {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  color: var(--obs-text-muted);
+  font-size: 10px;
 }
 
 .cu-macro-history {

@@ -1,6 +1,6 @@
 import { auto } from 'manate/react'
 import { useMemo, useState } from 'react'
-import { Input, Select } from 'antd'
+import { Input, InputNumber, Select } from 'antd'
 import {
   ArrowLeftOutlined,
   CheckOutlined,
@@ -25,9 +25,10 @@ export default auto(function MacrosPanel (props) {
   const [folderName, setFolderName] = useState('')
   const [name, setName] = useState('')
   const [macroFolder, setMacroFolder] = useState('')
-  const [useCwd, setUseCwd] = useState(Boolean(cwd))
+  const [startDirectory, setStartDirectory] = useState(cwd || '')
   const [commands, setCommands] = useState([])
   const [command, setCommand] = useState('')
+  const [commandDelay, setCommandDelay] = useState(100)
   const all = store.currentQuickCommands || []
   const recent = (store.terminalCommandHistory || [])
     .slice()
@@ -80,12 +81,15 @@ export default auto(function MacrosPanel (props) {
     const commands = macro.commands || (macro.command
       ? [{ command: macro.command }]
       : [])
-    return commands
+    const commandSummary = commands
       .map(item => item.command)
       .filter(Boolean)
       .join(' ; ')
       .replace(/\s+/g, ' ')
       .trim()
+    return [macro.startDirectory ? `cd ${macro.startDirectory}` : '', commandSummary]
+      .filter(Boolean)
+      .join(' ; ')
   }
   const openFolder = id => {
     setFolder(id)
@@ -99,28 +103,37 @@ export default auto(function MacrosPanel (props) {
   const openCreator = () => {
     setName('')
     setMacroFolder(folder && ![ALL, UNLABELED].includes(folder) ? folder : '')
-    setUseCwd(Boolean(cwd))
+    setStartDirectory(cwd || '')
     setCommands([])
     setCommand('')
+    setCommandDelay(100)
     setCreating(true)
   }
-  const addCommand = cmd => {
+  const addCommand = (cmd, commandDelayValue = commandDelay) => {
     const value = cmd.trim()
     if (!value) return
-    setCommands(prev => [...prev, value])
+    setCommands(prev => [...prev, {
+      command: value,
+      delay: Number(commandDelayValue) || 100
+    }])
     setCommand('')
   }
+  const updateCommand = (index, update) => {
+    setCommands(prev => prev.map((item, itemIndex) => (
+      itemIndex === index ? { ...item, ...update } : item
+    )))
+  }
   const saveMacro = () => {
-    if (!name.trim() || commands.length === 0) return
+    if (!name.trim() || (!startDirectory.trim() && commands.length === 0)) return
     store.addQuickCommand({
       id: generate(),
       name: name.trim(),
       labels: macroFolder.trim() ? [macroFolder.trim()] : [],
-      startDirectory: useCwd ? cwd : '',
-      commands: commands.map(cmd => ({
+      startDirectory: startDirectory.trim(),
+      commands: commands.map(item => ({
         id: generate(),
-        command: cmd,
-        delay: 100
+        command: item.command,
+        delay: item.delay
       }))
     })
     setCreating(false)
@@ -200,20 +213,38 @@ export default auto(function MacrosPanel (props) {
                 showSearch
                 className='cu-macro-folder-select'
               />
-              {cwd && (
-                <label className='cu-macro-cwd'>
-                  <input
-                    type='checkbox'
-                    checked={useCwd}
-                    onChange={ev => setUseCwd(ev.target.checked)}
+              <div className='cu-macro-start-directory'>
+                <div className='cu-macro-maker-label'>Start directory</div>
+                <div className='cu-macro-path-input'>
+                  <Input
+                    value={startDirectory}
+                    onChange={event => setStartDirectory(event.target.value)}
+                    placeholder='/path/to/project (optional)'
                   />
-                  <span><b>Start in current directory</b><small>{cwd}</small></span>
-                </label>
-              )}
+                  {cwd && (
+                    <button onClick={() => setStartDirectory(cwd)} title={cwd}>Current</button>
+                  )}
+                </div>
+                <small>A directory by itself is a valid macro. Commands run after changing directory.</small>
+              </div>
               <div className='cu-macro-maker-label'>Steps</div>
-              {commands.map((cmd, index) => (
-                <div className='cu-macro-draft-step' key={`${cmd}-${index}`}>
-                  <code>{cmd}</code>
+              {commands.map((item, index) => (
+                <div className='cu-macro-draft-step' key={`${item.command}-${index}`}>
+                  <Input.TextArea
+                    value={item.command}
+                    onChange={event => updateCommand(index, { command: event.target.value })}
+                    autoSize={{ minRows: 1, maxRows: 3 }}
+                  />
+                  <label className='cu-macro-step-delay'>
+                    <span>Delay</span>
+                    <InputNumber
+                      min={1}
+                      max={65535}
+                      value={item.delay}
+                      onChange={value => updateCommand(index, { delay: Number(value) || 100 })}
+                      suffix='ms'
+                    />
+                  </label>
                   <button onClick={() => setCommands(prev => prev.filter((_, i) => i !== index))}>
                     <CloseOutlined />
                   </button>
@@ -232,13 +263,21 @@ export default auto(function MacrosPanel (props) {
                   placeholder='Type a command…'
                   autoSize={{ minRows: 1, maxRows: 3 }}
                 />
+                <InputNumber
+                  min={1}
+                  max={65535}
+                  value={commandDelay}
+                  onChange={value => setCommandDelay(Number(value) || 100)}
+                  suffix='ms'
+                  title='Delay before this step'
+                />
                 <button onClick={() => addCommand(command)} title='Add command'><PlusOutlined /></button>
               </div>
               {recent.length > 0 && (
                 <div className='cu-macro-history'>
                   <div className='cu-macro-maker-label'><HistoryOutlined /> Recent commands</div>
                   {recent.map(item => (
-                    <button key={item.id || item.cmd} onClick={() => addCommand(item.cmd)} title='Add as a step'>
+                    <button key={item.id || item.cmd} onClick={() => addCommand(item.cmd, commandDelay)} title='Add as a step'>
                       <PlusOutlined /><code>{item.cmd}</code>
                     </button>
                   ))}
@@ -246,7 +285,7 @@ export default auto(function MacrosPanel (props) {
               )}
               <div className='cu-macro-maker-actions'>
                 <button onClick={() => setCreating(false)}>Cancel</button>
-                <button className='primary' disabled={!name.trim() || commands.length === 0} onClick={saveMacro}>
+                <button className='primary' disabled={!name.trim() || (!startDirectory.trim() && commands.length === 0)} onClick={saveMacro}>
                   <CheckOutlined /> Save macro
                 </button>
               </div>
