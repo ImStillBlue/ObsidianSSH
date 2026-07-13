@@ -1,5 +1,5 @@
 import { auto } from 'manate/react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Input, InputNumber, Select } from 'antd'
 import {
   ArrowLeftOutlined,
@@ -26,6 +26,7 @@ export default auto(function MacrosPanel (props) {
   const [name, setName] = useState('')
   const [macroFolder, setMacroFolder] = useState('')
   const [startDirectory, setStartDirectory] = useState(cwd || '')
+  const [startDirectoryTouched, setStartDirectoryTouched] = useState(false)
   const [commands, setCommands] = useState([])
   const [command, setCommand] = useState('')
   const [commandDelay, setCommandDelay] = useState(100)
@@ -34,6 +35,12 @@ export default auto(function MacrosPanel (props) {
     .slice()
     .sort((a, b) => new Date(b.lastUseTime) - new Date(a.lastUseTime))
     .slice(0, 8)
+
+  useEffect(() => {
+    if (creating && !startDirectoryTouched && cwd) {
+      setStartDirectory(cwd)
+    }
+  }, [creating, cwd, startDirectoryTouched])
 
   const folders = useMemo(() => {
     const counts = new Map()
@@ -104,6 +111,7 @@ export default auto(function MacrosPanel (props) {
     setName('')
     setMacroFolder(folder && ![ALL, UNLABELED].includes(folder) ? folder : '')
     setStartDirectory(cwd || '')
+    setStartDirectoryTouched(false)
     setCommands([])
     setCommand('')
     setCommandDelay(100)
@@ -218,11 +226,21 @@ export default auto(function MacrosPanel (props) {
                 <div className='cu-macro-path-input'>
                   <Input
                     value={startDirectory}
-                    onChange={event => setStartDirectory(event.target.value)}
+                    onChange={event => {
+                      setStartDirectory(event.target.value)
+                      setStartDirectoryTouched(true)
+                    }}
                     placeholder='/path/to/project (optional)'
                   />
                   {cwd && (
-                    <button onClick={() => setStartDirectory(cwd)} title={cwd}>Current</button>
+                    <button
+                      onClick={() => {
+                        setStartDirectory(cwd)
+                        setStartDirectoryTouched(true)
+                      }}
+                      title={cwd}
+                    >Current
+                    </button>
                   )}
                 </div>
                 <small>A directory by itself is a valid macro. Commands run after changing directory.</small>
