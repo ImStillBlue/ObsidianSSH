@@ -12,6 +12,7 @@ import {
   PlayCircleOutlined
 } from '@ant-design/icons'
 import generate from '../../common/uid'
+import { decodeOpenRemoteFile, encodeOpenRemoteFile } from '../../common/macro-actions'
 
 const UNLABELED = '__unlabeled__'
 const ALL = '__all__'
@@ -30,6 +31,7 @@ export default auto(function MacrosPanel (props) {
   const [commands, setCommands] = useState([])
   const [command, setCommand] = useState('')
   const [commandDelay, setCommandDelay] = useState(100)
+  const [stepType, setStepType] = useState('command')
   const all = store.currentQuickCommands || []
   const recent = (store.terminalCommandHistory || [])
     .slice()
@@ -89,7 +91,10 @@ export default auto(function MacrosPanel (props) {
       ? [{ command: macro.command }]
       : [])
     const commandSummary = commands
-      .map(item => item.command)
+      .map(item => {
+        const remoteFile = decodeOpenRemoteFile(item.command)
+        return remoteFile ? `open ${remoteFile}` : item.command
+      })
       .filter(Boolean)
       .join(' ; ')
       .replace(/\s+/g, ' ')
@@ -115,13 +120,14 @@ export default auto(function MacrosPanel (props) {
     setCommands([])
     setCommand('')
     setCommandDelay(100)
+    setStepType('command')
     setCreating(true)
   }
-  const addCommand = (cmd, commandDelayValue = commandDelay) => {
+  const addCommand = (cmd, commandDelayValue = commandDelay, type = stepType) => {
     const value = cmd.trim()
     if (!value) return
     setCommands(prev => [...prev, {
-      command: value,
+      command: type === 'openRemoteFile' ? encodeOpenRemoteFile(value) : value,
       delay: Number(commandDelayValue) || 100
     }])
     setCommand('')
@@ -248,9 +254,16 @@ export default auto(function MacrosPanel (props) {
               <div className='cu-macro-maker-label'>Steps</div>
               {commands.map((item, index) => (
                 <div className='cu-macro-draft-step' key={`${item.command}-${index}`}>
+                  <span className='cu-macro-step-type'>
+                    {decodeOpenRemoteFile(item.command) ? 'Open remote file' : 'Terminal command'}
+                  </span>
                   <Input.TextArea
-                    value={item.command}
-                    onChange={event => updateCommand(index, { command: event.target.value })}
+                    value={decodeOpenRemoteFile(item.command) || item.command}
+                    onChange={event => updateCommand(index, {
+                      command: decodeOpenRemoteFile(item.command)
+                        ? encodeOpenRemoteFile(event.target.value)
+                        : event.target.value
+                    })}
                     autoSize={{ minRows: 1, maxRows: 3 }}
                   />
                   <label className='cu-macro-step-delay'>
@@ -269,6 +282,14 @@ export default auto(function MacrosPanel (props) {
                 </div>
               ))}
               <div className='cu-macro-command-add'>
+                <Select
+                  value={stepType}
+                  onChange={setStepType}
+                  options={[
+                    { value: 'command', label: 'Terminal command' },
+                    { value: 'openRemoteFile', label: 'Open remote file' }
+                  ]}
+                />
                 <Input.TextArea
                   value={command}
                   onChange={ev => setCommand(ev.target.value)}
@@ -278,7 +299,7 @@ export default auto(function MacrosPanel (props) {
                       addCommand(command)
                     }
                   }}
-                  placeholder='Type a command…'
+                  placeholder={stepType === 'openRemoteFile' ? 'Remote file path…' : 'Type a command…'}
                   autoSize={{ minRows: 1, maxRows: 3 }}
                 />
                 <InputNumber
@@ -295,7 +316,7 @@ export default auto(function MacrosPanel (props) {
                 <div className='cu-macro-history'>
                   <div className='cu-macro-maker-label'><HistoryOutlined /> Recent commands</div>
                   {recent.map(item => (
-                    <button key={item.id || item.cmd} onClick={() => addCommand(item.cmd, commandDelay)} title='Add as a step'>
+                    <button key={item.id || item.cmd} onClick={() => addCommand(item.cmd, commandDelay, 'command')} title='Add as a step'>
                       <PlusOutlined /><code>{item.cmd}</code>
                     </button>
                   ))}

@@ -749,7 +749,8 @@ export default class FileSection extends React.Component {
     window.pre.ipcOnEvent('file-change', this.onFileChange)
   }
 
-  onFileChange = (e, text) => {
+  onFileChange = (e, text, changedPath) => {
+    if (changedPath && changedPath !== this.watchingFile) return
     this.editor.editWithSystemEditorDone({
       id: this.id,
       text

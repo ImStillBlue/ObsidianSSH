@@ -2,39 +2,41 @@ const fs = require('original-fs')
 const globalState = require('./glob-state')
 const _ = require('./lodash.js')
 
-const onWatch = _.debounce(() => {
-  try {
-    const filePath = globalState.get('watchFilePath')
-    if (fs.existsSync(filePath)) {
-      const text = fs.readFileSync(filePath, 'utf8')
-      globalState.get('win').webContents.send('file-change', text)
-    } else {
-      console.log('Watched file no longer exists')
-      globalState.get('win').webContents.send('file-deleted')
-    }
-  } catch (e) {
-    console.error('Error reading file:', e)
-    globalState.get('win').webContents.send('file-read-error', e.message)
-  }
-}, 300, { leading: false, trailing: true })
+const watchers = new Map()
 
 exports.watchFile = (path) => {
-  globalState.set('watchFilePath', path)
+  if (watchers.has(path)) return
+  const onWatch = _.debounce(() => {
+    try {
+      const win = globalState.get('win')
+      if (fs.existsSync(path)) {
+        const text = fs.readFileSync(path, 'utf8')
+        win?.webContents.send('file-change', text, path)
+      } else {
+        win?.webContents.send('file-deleted', path)
+      }
+    } catch (error) {
+      globalState.get('win')?.webContents.send('file-read-error', error.message, path)
+    }
+  }, 300, { leading: false, trailing: true })
+  watchers.set(path, onWatch)
   fs.watchFile(path, onWatch)
 }
 
 exports.unwatchFile = (path) => {
-  globalState.set('watchFilePath', '')
+  const onWatch = watchers.get(path)
+  if (!onWatch) return
   fs.unwatchFile(path, onWatch)
+  onWatch.cancel?.()
+  watchers.delete(path)
 }
 
 exports.cleanWatchFile = () => {
-  globalState.set('watchFilePath', '')
-  const filePath = globalState.get('watchFilePath')
-  if (!filePath) {
-    return
+  for (const [path, onWatch] of watchers) {
+    fs.unwatchFile(path, onWatch)
+    onWatch.cancel?.()
   }
-  fs.unwatchFile(filePath, onWatch)
+  watchers.clear()
 }
 
 process.on('exit', exports.cleanWatchFile)

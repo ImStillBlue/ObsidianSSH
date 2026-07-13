@@ -16,6 +16,7 @@ import deepCopy from 'json-deep-copy'
 import templates from './templates'
 import HelpIcon from '../common/help-icon'
 import { PlusOutlined } from '@ant-design/icons'
+import { decodeOpenRemoteFile, encodeOpenRemoteFile } from '../../common/macro-actions'
 
 const FormItem = Form.Item
 const { Option } = Select
@@ -61,9 +62,18 @@ export default function QuickCommandForm (props) {
       startDirectory,
       shortcut
     } = res
+    const nativeCommands = (commands || []).map(item => {
+      const { action, remotePath, ...nativeItem } = item
+      return {
+        ...nativeItem,
+        command: action === 'openRemoteFile'
+          ? encodeOpenRemoteFile(remotePath || '')
+          : nativeItem.command
+      }
+    })
     const update = deepCopy({
       name,
-      commands,
+      commands: nativeCommands,
       inputOnly,
       labels,
       startDirectory,
@@ -84,7 +94,7 @@ export default function QuickCommandForm (props) {
     }
     message.success(e('saved'))
   }
-  const initialValues = formData
+  const initialValues = deepCopy(formData)
   if (!initialValues.labels) {
     initialValues.labels = []
   }
@@ -95,6 +105,14 @@ export default function QuickCommandForm (props) {
       delay: 100
     }]
   }
+  initialValues.commands = initialValues.commands.map(item => {
+    const remotePath = decodeOpenRemoteFile(item.command)
+    return {
+      ...item,
+      action: remotePath ? 'openRemoteFile' : 'command',
+      remotePath
+    }
+  })
   const editorProps = {
     data: {
       name: uid,

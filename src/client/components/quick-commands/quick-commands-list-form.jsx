@@ -3,7 +3,8 @@ import {
   InputNumber,
   Space,
   Button,
-  Input
+  Input,
+  Select
 } from 'antd'
 import { MinusCircleOutlined, PlusOutlined, HolderOutlined } from '@ant-design/icons'
 import HelpIcon from '../common/help-icon'
@@ -93,20 +94,43 @@ export default function renderQm (form) {
           />
         </FormItem>
         <FormItem
-          label=''
-          name={[field.name, 'command']}
-          required
-          className='mg2x'
+          name={[field.name, 'action']}
           noStyle
         >
-          <Input.TextArea
-            autoSize={{ minRows: 1 }}
-            placeholder='Enter a terminal command'
-            className='compact-input qm-input'
-            onFocus={() => {
-              focused.current = i
-            }}
+          <Select
+            className='qm-action-select'
+            options={[
+              { value: 'command', label: 'Command' },
+              { value: 'openRemoteFile', label: 'Open remote file' }
+            ]}
           />
+        </FormItem>
+        <FormItem
+          noStyle
+          shouldUpdate={(previous, current) => {
+            return previous.commands?.[field.name]?.action !== current.commands?.[field.name]?.action
+          }}
+        >
+          {({ getFieldValue }) => {
+            const action = getFieldValue(['commands', field.name, 'action']) || 'command'
+            const fieldName = action === 'openRemoteFile' ? 'remotePath' : 'command'
+            return (
+              <FormItem
+                name={[field.name, fieldName]}
+                required
+                noStyle
+              >
+                <Input.TextArea
+                  autoSize={{ minRows: 1 }}
+                  placeholder={action === 'openRemoteFile' ? 'Remote file path' : 'Enter a terminal command'}
+                  className='compact-input qm-input'
+                  onFocus={() => {
+                    focused.current = i
+                  }}
+                />
+              </FormItem>
+            )
+          }}
         </FormItem>
         <Button
           icon={<MinusCircleOutlined />}
@@ -178,7 +202,7 @@ export default function renderQm (form) {
                 <FormItem>
                   <Button
                     type='dashed'
-                    onClick={() => add()}
+                    onClick={() => add({ action: 'command', delay: 100 })}
                     icon={<PlusOutlined />}
                   >
                     Add step
