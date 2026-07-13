@@ -215,10 +215,10 @@ export default class FileSection extends React.Component {
     })
   }
 
-  startRemoteFileDrag = async files => {
+  stageRemoteFilesForDrag = async files => {
     const regularFiles = files.filter(file => !file.isDirectory)
     if (!regularFiles.length) {
-      return message.warning('Drag-out currently supports files, not folders')
+      throw new Error('Drag-out currently supports files, not folders')
     }
     const stagingDir = window.pre.resolve(window.pre.tempDir, `electerm-drag-${generate()}`)
     await window.fs.mkdir(stagingDir, { recursive: true })
@@ -227,7 +227,58 @@ export default class FileSection extends React.Component {
       const localPath = window.pre.resolve(stagingDir, sanitizeFilename(file.name))
       localFiles.push(await this.downloadRemoteFileForDrag(file, localPath))
     }
-    window.api.startFileDrag(localFiles)
+    return localFiles
+  }
+
+  prepareRemoteFileDrag = files => {
+    const key = files
+      .filter(file => !file.isDirectory)
+      .map(file => `${file.id}:${file.size}:${file.modifyTime || ''}`)
+      .join('|')
+    if (this.remoteDragPreparation?.key === key) {
+      return this.remoteDragPreparation
+    }
+    const preparation = {
+      key,
+      status: 'pending',
+      localFiles: []
+    }
+    preparation.promise = this.stageRemoteFilesForDrag(files)
+      .then(localFiles => {
+        preparation.status = 'ready'
+        preparation.localFiles = localFiles
+        return localFiles
+      })
+      .catch(error => {
+        preparation.status = 'error'
+        preparation.error = error
+        throw error
+      })
+    // Pointer-down preparation is intentionally fire-and-forget. The drag
+    // handler consumes any failure without creating an unhandled rejection.
+    preparation.promise.catch(() => {})
+    this.remoteDragPreparation = preparation
+    return preparation
+  }
+
+  getRemoteDragFiles = () => {
+    const selected = this.isSelected(this.props.file.id)
+    return selected
+      ? this.props.getSelectedFiles()
+      : [this.props.file]
+  }
+
+  prepareRemoteDragOnPointerDown = e => {
+    if (
+      e.button !== 0 ||
+      e.shiftKey ||
+      this.props.file.type !== typeMap.remote ||
+      this.props.file.isDirectory ||
+      window.et.isWebApp
+    ) {
+      return
+    }
+    this.prepareRemoteFileDrag(this.getRemoteDragFiles())
   }
 
   onDragStart = e => {
@@ -244,12 +295,23 @@ export default class FileSection extends React.Component {
       ? this.props.getSelectedFiles()
       : [this.props.file]
     if (
-      e.altKey &&
       this.props.file.type === typeMap.remote &&
-      !window.et.isWebApp
+      !window.et.isWebApp &&
+      !e.shiftKey
     ) {
       e.preventDefault()
-      this.startRemoteFileDrag(dragFiles).catch(window.store.onError)
+      const preparation = this.prepareRemoteFileDrag(dragFiles)
+      if (preparation.status === 'ready') {
+        // This must happen synchronously in dragstart for Linux/Wayland file
+        // managers (including Dolphin) to accept the native file payload.
+        window.api.startFileDrag(preparation.localFiles)
+      } else if (preparation.status === 'error') {
+        window.store.onError(preparation.error)
+      } else {
+        preparation.promise
+          .then(() => message.info('File prepared. Drag it again to copy it out.'))
+          .catch(window.store.onError)
+      }
       return
     }
     const filesWithMeta = dragFiles.map(file => {
@@ -1419,11 +1481,12 @@ export default class FileSection extends React.Component {
       className,
       draggable: draggable && !isParent,
       onDragStart: onDragStart || this.onDragStart,
+      onPointerDown: this.prepareRemoteDragOnPointerDown,
       'data-id': id,
       id: this.id,
       'data-type': type,
       title: file.type === typeMap.remote && !window.et.isWebApp
-        ? `${file.name}\nAlt-drag to copy to your desktop or file manager`
+        ? `${file.name}\nDrag to copy to your desktop or file manager\nShift-drag for transfers inside ObsidianSSH`
         : file.name
     }
     return (

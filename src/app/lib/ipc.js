@@ -254,9 +254,14 @@ function initIpc () {
   ipcMain.on('start-file-drag', (event, files) => {
     const safeFiles = Array.isArray(files) ? files.filter(Boolean) : []
     if (!safeFiles.length) return
+    const dragIcon = nativeImage.createFromPath(iconPath).resize({
+      width: 32,
+      height: 32
+    })
     event.sender.startDrag({
+      file: safeFiles[0],
       files: safeFiles,
-      icon: nativeImage.createFromPath(iconPath)
+      icon: dragIcon
     })
   })
 }
