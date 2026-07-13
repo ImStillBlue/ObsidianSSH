@@ -294,7 +294,7 @@ export default auto(function MacrosPanel (props) {
                     }
                   }}
                   placeholder={stepType === 'openRemoteFile'
-                    ? 'Remote file path…'
+                    ? 'File path: relative or absolute…'
                     : stepType === 'changeDirectory'
                       ? 'Directory path…'
                       : 'Type a command…'}

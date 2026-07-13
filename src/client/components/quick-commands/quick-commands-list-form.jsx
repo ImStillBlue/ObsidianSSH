@@ -120,7 +120,7 @@ export default function renderQm (form) {
                 ? 'directory'
                 : 'command'
             const placeholder = action === 'openRemoteFile'
-              ? 'Remote file path'
+              ? 'File path (relative to latest directory, or absolute)'
               : action === 'changeDirectory'
                 ? 'Directory path'
                 : 'Enter a terminal command'

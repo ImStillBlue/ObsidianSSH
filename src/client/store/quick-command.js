@@ -22,6 +22,7 @@ import {
 } from '../common/macro-actions'
 
 const externalMacroEditors = new Map()
+const missingRemoteFilePattern = /no such file|not found|enoent/i
 
 // Function to parse templates in command string
 async function parseTemplates (cmd) {
@@ -152,11 +153,36 @@ export default Store => {
       }
       const remoteFile = decodeOpenRemoteFile(q.command)
       if (remoteFile) {
-        const remotePath = remoteFile.startsWith('/') || !currentDirectory
-          ? remoteFile
-          : normalizeRemotePath(`${currentDirectory}/${remoteFile}`)
         await delay(q.delay || 100)
-        await store.openRemoteFileInSystemEditor(remotePath)
+        const requestedPath = normalizeRemotePath(remoteFile)
+        const remotePath = requestedPath.startsWith('/') || !currentDirectory
+          ? requestedPath
+          : normalizeRemotePath(`${currentDirectory}/${requestedPath}`)
+        try {
+          await store.openRemoteFileInSystemEditor(remotePath)
+        } catch (error) {
+          // A common entry is "/file/" when the user means a file beneath the
+          // preceding directory step. Preserve absolute paths, but if that path
+          // does not exist, safely try the directory-relative interpretation.
+          const canTryRelative = currentDirectory &&
+            requestedPath.startsWith('/') &&
+            missingRemoteFilePattern.test(error?.message || '')
+          const relativePath = canTryRelative
+            ? normalizeRemotePath(`${currentDirectory}/${requestedPath.replace(/^\/+/, '')}`)
+            : ''
+          if (relativePath && relativePath !== remotePath) {
+            try {
+              await store.openRemoteFileInSystemEditor(relativePath)
+              continue
+            } catch (relativeError) {
+              store.onError(new Error(
+                `Could not open remote file ${remotePath} or ${relativePath}: ${relativeError.message}`
+              ))
+              continue
+            }
+          }
+          store.onError(new Error(`Could not open remote file ${remotePath}: ${error.message}`))
+        }
         continue
       }
       let realCmd = isWin
