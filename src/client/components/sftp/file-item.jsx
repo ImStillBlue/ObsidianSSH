@@ -30,7 +30,12 @@ import {
 import sorter from '../../common/index-sorter'
 import { getFolderFromFilePath, getLocalFileInfo } from './file-read'
 import { readClipboard, copy as copyToClipboard, hasFileInClipboardText } from '../../common/clipboard'
-import { getDropFileList } from '../../common/file-drop-utils'
+import { getDropPayload } from '../../common/file-drop-utils'
+import {
+  getRemoteDragCacheKey,
+  prepareRemoteNativeDrag,
+  startNativeFileDrag
+} from '../../common/native-file-drag'
 import time from '../../common/time'
 import { filesize } from 'filesize'
 import { createTransferProps } from './transfer-common'
@@ -62,6 +67,8 @@ export default class FileSection extends React.Component {
 
   componentDidMount () {
     filesRef.add(this.id, this)
+    window.addEventListener('pointerup', this.onNativeDragPointerUp, true)
+    window.addEventListener('blur', this.onNativeDragPointerUp)
     this.applyStyle()
   }
 
@@ -76,6 +83,9 @@ export default class FileSection extends React.Component {
 
   componentWillUnmount () {
     filesRef.remove(this.id)
+    window.removeEventListener('pointerup', this.onNativeDragPointerUp, true)
+    window.removeEventListener('blur', this.onNativeDragPointerUp)
+    this.dragPreparationMessage?.destroy()
     clearTimeout(this.timer)
     this.timer = null
     this.domRef = null
@@ -191,94 +201,100 @@ export default class FileSection extends React.Component {
     this.props.addTransferList(res)
   }
 
-  downloadRemoteFileForDrag = (file, localPath) => {
+  downloadRemoteItemForDrag = (file, localPath, onProgress) => {
     const remotePath = resolve(file.path, file.name)
     return new Promise((resolve, reject) => {
-      let transport
-      const done = () => {
-        transport?.destroy()
-        resolve(localPath)
-      }
-      const fail = error => {
-        transport?.destroy()
-        reject(error)
-      }
       this.props.sftp.download({
         remotePath,
         localPath,
-        isDirectory: false,
+        isDirectory: !!file.isDirectory,
         options: { mode: file.mode },
-        onData: () => {},
-        onError: fail,
-        onEnd: done
-      }).then(instance => { transport = instance }).catch(fail)
+        onData: progress => onProgress?.({ file, progress }),
+        onError: reject,
+        onEnd: () => resolve(localPath)
+      }).catch(reject)
     })
   }
 
-  stageRemoteFilesForDrag = async files => {
-    const regularFiles = files.filter(file => !file.isDirectory)
-    if (!regularFiles.length) {
-      throw new Error('Drag-out currently supports files, not folders')
-    }
+  stageRemoteItemsForDrag = async (files, onProgress) => {
     const stagingDir = window.pre.resolve(window.pre.tempDir, `electerm-drag-${generate()}`)
     await window.fs.mkdir(stagingDir, { recursive: true })
-    const localFiles = []
-    for (const file of regularFiles) {
-      const localPath = window.pre.resolve(stagingDir, sanitizeFilename(file.name))
-      localFiles.push(await this.downloadRemoteFileForDrag(file, localPath))
+    try {
+      const paths = []
+      for (const file of files) {
+        const localPath = window.pre.resolve(stagingDir, sanitizeFilename(file.name))
+        paths.push(await this.downloadRemoteItemForDrag(file, localPath, onProgress))
+      }
+      return { paths, cleanupRoot: stagingDir }
+    } catch (error) {
+      window.fs.rmrf(stagingDir).catch(console.log)
+      throw error
     }
-    return localFiles
   }
 
   prepareRemoteFileDrag = files => {
-    const key = files
-      .filter(file => !file.isDirectory)
-      .map(file => `${file.id}:${file.size}:${file.modifyTime || ''}`)
-      .join('|')
-    if (this.remoteDragPreparation?.key === key) {
-      return this.remoteDragPreparation
-    }
-    const preparation = {
+    const key = getRemoteDragCacheKey(files, this.props.tab?.id)
+    return prepareRemoteNativeDrag(
       key,
-      status: 'pending',
-      localFiles: []
-    }
-    preparation.promise = this.stageRemoteFilesForDrag(files)
-      .then(localFiles => {
-        preparation.status = 'ready'
-        preparation.localFiles = localFiles
-        return localFiles
-      })
-      .catch(error => {
-        preparation.status = 'error'
-        preparation.error = error
-        throw error
-      })
-    // Pointer-down preparation is intentionally fire-and-forget. The drag
-    // handler consumes any failure without creating an unhandled rejection.
-    preparation.promise.catch(() => {})
-    this.remoteDragPreparation = preparation
-    return preparation
+      onProgress => this.stageRemoteItemsForDrag(files, onProgress)
+    )
   }
 
-  getRemoteDragFiles = () => {
+  getDragFiles = () => {
     const selected = this.isSelected(this.props.file.id)
     return selected
       ? this.props.getSelectedFiles()
       : [this.props.file]
   }
 
-  prepareRemoteDragOnPointerDown = e => {
+  onNativeDragPointerUp = () => {
+    this.nativeDragPointerDown = false
+  }
+
+  prepareNativeDragOnPointerDown = e => {
     if (
       e.button !== 0 ||
-      e.shiftKey ||
-      this.props.file.type !== typeMap.remote ||
-      this.props.file.isDirectory ||
       window.et.isWebApp
     ) {
       return
     }
-    this.prepareRemoteFileDrag(this.getRemoteDragFiles())
+    this.nativeDragPointerDown = true
+    const files = this.getDragFiles()
+    if (this.props.file.type === typeMap.remote) {
+      this.prepareRemoteFileDrag(files)
+    }
+  }
+
+  getDragOrigins = files => {
+    const transferProps = createTransferProps(this.props)
+    return files.map(file => copy({
+      ...file,
+      host: this.props.tab?.host,
+      tabType: this.props.tab?.type,
+      tabId: transferProps.tabId,
+      title: transferProps.title
+    }))
+  }
+
+  startPreparedNativeDrag = (paths, origins) => {
+    this.dragPreparationMessage?.destroy()
+    this.dragPreparationMessage = null
+    startNativeFileDrag(paths, origins)
+  }
+
+  showDragPreparationProgress = ({ file, progress }) => {
+    const transferred = Number(progress?.transferred ?? progress)
+    const total = Number(progress?.total)
+    const amount = Number.isFinite(transferred)
+      ? total > 0
+        ? `${filesize(transferred)} / ${filesize(total)}`
+        : filesize(transferred)
+      : ''
+    this.dragPreparationMessage = message.info({
+      key: 'native-drag-preparation',
+      content: `Preparing ${file.name}${amount ? ` — ${amount}` : '…'}`,
+      duration: 0
+    })
   }
 
   onDragStart = e => {
@@ -289,62 +305,54 @@ export default class FileSection extends React.Component {
       ? onDragCls + ' ' + onMultiDragCls
       : onDragCls
     addClass(this.domRef.current, cls)
-    const transferProps = createTransferProps(this.props)
     const selected = this.isSelected(this.props.file.id)
     const dragFiles = selected
       ? this.props.getSelectedFiles()
       : [this.props.file]
-    if (
-      this.props.file.type === typeMap.remote &&
-      !window.et.isWebApp &&
-      !e.shiftKey
-    ) {
+    const origins = this.getDragOrigins(dragFiles)
+    if (!window.et.isWebApp) {
+      e.preventDefault()
+      if (this.props.file.type === typeMap.local) {
+        const paths = dragFiles.map(file => resolve(file.path, file.name))
+        this.startPreparedNativeDrag(paths, origins)
+        return
+      }
       const preparation = this.prepareRemoteFileDrag(dragFiles)
       if (preparation.status === 'ready') {
-        if (window.pre.isLinux) {
-          // Qt file managers such as Dolphin consume local file references as
-          // text/uri-list. Chromium's generic native payload can be rejected
-          // by the XWayland bridge with a forbidden-drop cursor.
-          const fileUrls = preparation.localFiles.map(window.api.pathToFileUrl)
-          const uriList = fileUrls.join('\r\n')
-          e.dataTransfer.effectAllowed = 'copy'
-          e.dataTransfer.setData('text/uri-list', uriList)
-          e.dataTransfer.setData('text/plain', uriList)
-          if (fileUrls.length === 1) {
-            e.dataTransfer.setData(
-              'DownloadURL',
-              `application/octet-stream:${dragFiles[0].name}:${fileUrls[0]}`
-            )
-          }
-        } else {
-          e.preventDefault()
-          window.api.startFileDrag(preparation.localFiles)
-        }
+        this.startPreparedNativeDrag(preparation.paths, origins)
       } else if (preparation.status === 'error') {
-        e.preventDefault()
         window.store.onError(preparation.error)
       } else {
-        e.preventDefault()
+        this.dragPreparationMessage?.destroy()
+        this.dragPreparationMessage = message.info({
+          key: 'native-drag-preparation',
+          content: `Preparing ${dragFiles.length > 1 ? `${dragFiles.length} items` : dragFiles[0].name}…`,
+          duration: 0
+        })
+        const unsubscribeProgress = preparation.subscribeProgress(
+          this.showDragPreparationProgress
+        )
         preparation.promise
-          .then(() => message.info('File prepared. Drag it again to copy it out.'))
-          .catch(window.store.onError)
+          .then(paths => {
+            unsubscribeProgress()
+            if (this.nativeDragPointerDown) {
+              this.startPreparedNativeDrag(paths, origins)
+            } else {
+              this.dragPreparationMessage?.destroy()
+              this.dragPreparationMessage = null
+              message.info('Ready to drag')
+            }
+          })
+          .catch(error => {
+            unsubscribeProgress()
+            this.dragPreparationMessage?.destroy()
+            this.dragPreparationMessage = null
+            window.store.onError(error)
+          })
       }
       return
     }
-    const filesWithMeta = dragFiles.map(file => {
-      return {
-        ...file,
-        host: this.props.tab?.host,
-        tabType: this.props.tab?.type,
-        tabId: transferProps.tabId,
-        title: transferProps.title
-      }
-    })
-    e.dataTransfer.setData('fromFile', JSON.stringify(filesWithMeta))
-  }
-
-  getDropFileList = data => {
-    return getDropFileList(data)
+    e.dataTransfer.setData('fromFile', JSON.stringify(origins))
   }
 
   onDragEnd = () => {
@@ -359,13 +367,12 @@ export default class FileSection extends React.Component {
 
   onDrop = async e => {
     e.preventDefault()
-    const fromFileManager = !!e?.dataTransfer?.files?.length
+    const { files: fromFiles, fromFileManager } = await getDropPayload(e.dataTransfer)
     let { target } = e
     if (!target) {
       return
     }
-    const fromFiles = this.getDropFileList(e.dataTransfer)
-    if (!fromFiles) {
+    if (!fromFiles?.length) {
       return
     }
 
@@ -1498,12 +1505,12 @@ export default class FileSection extends React.Component {
       className,
       draggable: draggable && !isParent,
       onDragStart: onDragStart || this.onDragStart,
-      onPointerDown: this.prepareRemoteDragOnPointerDown,
+      onPointerDown: this.prepareNativeDragOnPointerDown,
       'data-id': id,
       id: this.id,
       'data-type': type,
       title: file.type === typeMap.remote && !window.et.isWebApp
-        ? `${file.name}\nDrag to copy to your desktop or file manager\nShift-drag for transfers inside ObsidianSSH`
+        ? `${file.name}\nDrag to ObsidianSSH or your desktop file manager`
         : file.name
     }
     return (

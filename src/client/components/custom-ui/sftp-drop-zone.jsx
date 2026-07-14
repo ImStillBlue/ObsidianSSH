@@ -1,13 +1,14 @@
 import { useRef, useState } from 'react'
 import { CloudUploadOutlined } from '@ant-design/icons'
-import { getDropFileList } from '../../common/file-drop-utils'
+import { getDropPayload } from '../../common/file-drop-utils'
 import { getLocalFileInfo } from '../sftp/file-read'
-import { typeMap } from '../../common/constants'
+import { fileOperationsMap, typeMap } from '../../common/constants'
 import createTitle from '../../common/create-title'
 import findParent from '../../common/find-parent'
 import resolve from '../../common/resolve'
 import sanitizeFilename from '../../common/sanitize-filename'
 import generate from '../../common/uid'
+import { refsStatic } from '../common/ref'
 
 const isOsFileDrag = e => {
   const types = e.dataTransfer?.types
@@ -79,23 +80,45 @@ export default function SftpDropZone (props) {
     if (!target) {
       return
     }
-    const dropped = getDropFileList(e.dataTransfer)
+    const { files: dropped, fromFileManager } = await getDropPayload(e.dataTransfer)
     if (!dropped || !dropped.length) {
       return
     }
     const { inst, type, path } = target
     const { tab } = inst.props
+    const isCrossHostRemoteDrop = !fromFileManager &&
+      type === typeMap.remote &&
+      dropped.every(file => (
+        file.type === typeMap.remote &&
+        file.host &&
+        file.host !== tab?.host
+      ))
+    if (isCrossHostRemoteDrop) {
+      const handled = refsStatic.get('remote2remote-handlers')?.onRemote2RemoteDrop({
+        fromFiles: dropped,
+        toFile: { path, name: '' },
+        targetTab: tab
+      })
+      if (handled) return
+    }
     const list = []
     for (const f of dropped) {
       const fromPath = resolve(f.path, f.name)
-      const info = await getLocalFileInfo(fromPath).catch(console.log)
+      const info = fromFileManager
+        ? await getLocalFileInfo(fromPath).catch(console.log)
+        : f
       if (!info) {
         continue
       }
+      const operation = !fromFileManager && f.type === type
+        ? fileOperationsMap.mv
+        : type === typeMap.local && fromFileManager
+          ? fileOperationsMap.cp
+          : ''
       list.push({
         host: tab?.host,
         tabType: tab?.type,
-        typeFrom: typeMap.local,
+        typeFrom: fromFileManager ? typeMap.local : f.type,
         typeTo: type,
         fromPath,
         toPath: resolve(path, sanitizeFilename(f.name)),
@@ -105,7 +128,7 @@ export default function SftpDropZone (props) {
         tabId: tab.id,
         // dropping onto the local pane of a local tab is a plain copy,
         // not an upload
-        operation: type === typeMap.local ? 'cp' : ''
+        operation
       })
     }
     // ignore no-op copies of a file onto its own folder
