@@ -3,6 +3,7 @@
  */
 
 const { ipcRenderer, contextBridge, webFrame, webUtils } = require('electron')
+const { pathToFileURL } = require('node:url')
 
 contextBridge.exposeInMainWorld(
   'api', {
@@ -22,12 +23,10 @@ contextBridge.exposeInMainWorld(
     saveDialog: (opts) => {
       return ipcRenderer.invoke('show-save-dialog', opts)
     },
-    startFileDrag: (payload) => {
-      ipcRenderer.send('start-file-drag', payload)
+    startFileDrag: (files) => {
+      ipcRenderer.send('start-file-drag', files)
     },
-    resolveFileDragOrigins: (files) => {
-      return ipcRenderer.invoke('resolve-file-drag-origins', files)
-    },
+    pathToFileUrl: (filePath) => pathToFileURL(filePath).href,
     ipcOnEvent: (event, cb) => {
       ipcRenderer.on(event, cb)
     },
