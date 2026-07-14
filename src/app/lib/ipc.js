@@ -74,28 +74,6 @@ const { iconPath } = require('../common/runtime-constants')
 const fs = require('node:fs')
 const path = require('node:path')
 
-const nativeDragOrigins = new Map()
-const nativeDragOriginTtl = 30 * 60 * 1000
-
-function registerNativeDragOrigins (paths, origins) {
-  const expiresAt = Date.now() + nativeDragOriginTtl
-  paths.forEach((filePath, index) => {
-    if (origins[index]) {
-      nativeDragOrigins.set(path.resolve(filePath), {
-        expiresAt,
-        origin: origins[index]
-      })
-    }
-  })
-  setTimeout(() => {
-    for (const [filePath, entry] of nativeDragOrigins) {
-      if (entry.expiresAt <= Date.now()) {
-        nativeDragOrigins.delete(filePath)
-      }
-    }
-  }, nativeDragOriginTtl)
-}
-
 // Security: whitelist of safe environment variables for Linux/Mac/Windows
 const SAFE_ENV_KEYS = [
   'SHELL', 'TERM', 'TERM_PROGRAM', 'TERM_PROGRAM_VERSION', 'COLORTERM',
@@ -275,17 +253,7 @@ function initIpc () {
     const win = BrowserWindow.fromWebContents(event.sender)
     return dialog.showSaveDialog(win, ...args)
   })
-  ipcMain.handle('resolve-file-drag-origins', (event, files) => {
-    if (!Array.isArray(files) || !files.length) return null
-    const origins = files.map(filePath => {
-      const entry = nativeDragOrigins.get(path.resolve(filePath))
-      return entry?.expiresAt > Date.now() ? entry.origin : null
-    })
-    return origins.every(Boolean) ? origins : null
-  })
-  ipcMain.on('start-file-drag', (event, payload) => {
-    const files = Array.isArray(payload) ? payload : payload?.files
-    const origins = Array.isArray(payload?.origins) ? payload.origins : []
+  ipcMain.on('start-file-drag', (event, files) => {
     const safeFiles = Array.isArray(files)
       ? files.filter(filePath => (
         typeof filePath === 'string' &&
@@ -294,9 +262,6 @@ function initIpc () {
       ))
       : []
     if (!safeFiles.length) return
-    if (origins.length === files.length && safeFiles.length === files.length) {
-      registerNativeDragOrigins(safeFiles, origins)
-    }
     const dragIcon = nativeImage.createFromPath(iconPath).resize({
       width: 32,
       height: 32

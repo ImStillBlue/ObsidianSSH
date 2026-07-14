@@ -4,7 +4,6 @@
 
 import { getFolderFromFilePath } from '../components/sftp/file-read'
 import { typeMap } from './constants'
-import { resolveNativeDragOrigins } from './native-file-drag'
 
 /**
  * Safely get file path from dropped file
@@ -53,31 +52,6 @@ export const getDropFileList = (dataTransfer) => {
     })
   }
   return res
-}
-
-export const getNativeDropPaths = (dataTransfer) => {
-  const paths = []
-  for (const file of dataTransfer.files || []) {
-    const filePath = getFilePath(file)
-    if (filePath) paths.push(filePath)
-  }
-  return paths
-}
-
-export const getDropPayload = async (dataTransfer) => {
-  const fromFile = dataTransfer.getData('fromFile')
-  if (fromFile) {
-    return {
-      files: getDropFileList(dataTransfer),
-      fromFileManager: false
-    }
-  }
-  const paths = getNativeDropPaths(dataTransfer)
-  const origins = await resolveNativeDragOrigins(paths).catch(() => null)
-  return {
-    files: origins || getDropFileList(dataTransfer),
-    fromFileManager: !origins
-  }
 }
 
 /**

@@ -21,6 +21,13 @@ export function getRemoteDragCacheKey (files, tabId) {
   ].join(':')).join('|')
 }
 
+// Read-only peek: lets dragstart check for already-staged files without
+// kicking off a download for what may be a purely internal drag
+export function getPreparedRemoteDrag (key) {
+  const cached = remoteDragCache.get(key)
+  return cached?.status === 'ready' ? cached : null
+}
+
 export function prepareRemoteNativeDrag (key, stage) {
   const cached = remoteDragCache.get(key)
   if (cached && cached.status !== 'error') {
@@ -61,11 +68,23 @@ export function prepareRemoteNativeDrag (key, stage) {
   return entry
 }
 
-export function startNativeFileDrag (paths, origins) {
-  window.api.startFileDrag({ files: paths, origins })
-}
-
-export async function resolveNativeDragOrigins (paths) {
-  if (!paths.length || !window.api?.resolveFileDragOrigins) return null
-  return window.api.resolveFileDragOrigins(paths)
+// Attach dropped-file data that external apps understand. Qt/GTK file
+// managers consume text/uri-list; Electron's startDrag is rejected by the
+// XWayland bridge on Linux (forbidden-drop cursor), so the uri-list rides
+// along the normal HTML5 drag there instead. Internal drops are unaffected:
+// they read the fromFile payload first.
+export function attachNativeDragPayload (dataTransfer, paths, fileName) {
+  const fileUrls = paths.map(window.api.pathToFileUrl)
+  const uriList = fileUrls.join('\r\n')
+  // copyMove keeps internal same-pane move drops working while still
+  // offering external targets a copy
+  dataTransfer.effectAllowed = 'copyMove'
+  dataTransfer.setData('text/uri-list', uriList)
+  dataTransfer.setData('text/plain', uriList)
+  if (fileUrls.length === 1 && fileName) {
+    dataTransfer.setData(
+      'DownloadURL',
+      `application/octet-stream:${fileName}:${fileUrls[0]}`
+    )
+  }
 }
