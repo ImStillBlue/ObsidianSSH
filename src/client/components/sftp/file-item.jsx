@@ -32,7 +32,6 @@ import { getFolderFromFilePath, getLocalFileInfo } from './file-read'
 import { readClipboard, copy as copyToClipboard, hasFileInClipboardText } from '../../common/clipboard'
 import { getDropFileList } from '../../common/file-drop-utils'
 import {
-  attachNativeDragPayload,
   getPreparedRemoteDrag,
   getRemoteDragCacheKey,
   prepareRemoteNativeDrag
@@ -283,11 +282,7 @@ export default class FileSection extends React.Component {
         unsubscribeProgress()
         this.dragPreparationMessage?.destroy()
         this.dragPreparationMessage = null
-        message.success(
-          window.pre.isLinux
-            ? 'Ready — drag out again to download'
-            : 'Ready — alt-drag to download'
-        )
+        message.success('Ready — drag out again to download')
       })
       .catch(error => {
         unsubscribeProgress()
@@ -354,10 +349,8 @@ export default class FileSection extends React.Component {
       return
     }
     if (this.props.file.type === typeMap.local) {
-      const paths = dragFiles.map(file => resolve(file.path, file.name))
-      if (window.pre.isLinux) {
-        attachNativeDragPayload(e.dataTransfer, paths, dragFiles[0].name)
-      } else if (e.altKey) {
+      if (e.altKey) {
+        const paths = dragFiles.map(file => resolve(file.path, file.name))
         this.startElectronNativeDrag(e, paths)
       }
       return
@@ -365,11 +358,7 @@ export default class FileSection extends React.Component {
     const cacheKey = getRemoteDragCacheKey(dragFiles, this.props.tab?.id)
     const prepared = getPreparedRemoteDrag(cacheKey)
     if (prepared) {
-      if (window.pre.isLinux) {
-        attachNativeDragPayload(e.dataTransfer, prepared.paths, dragFiles[0].name)
-      } else if (e.altKey) {
-        this.startElectronNativeDrag(e, prepared.paths)
-      }
+      this.startElectronNativeDrag(e, prepared.paths)
       return
     }
     if (e.altKey) {
@@ -382,7 +371,9 @@ export default class FileSection extends React.Component {
     this.addDragOutListener()
   }
 
-  // Hand the drag over to Electron's startDrag (mac/win). The HTML5 drag is
+  // Hand the drag over to Electron's webContents.startDrag — the documented
+  // way to drag real files out to the OS (renderer dataTransfer types are
+  // sanitized by Chromium and never reach external apps). The HTML5 drag is
   // cancelled, so run the dragend cleanup ourselves — it will never fire
   startElectronNativeDrag = (e, paths) => {
     e.preventDefault()

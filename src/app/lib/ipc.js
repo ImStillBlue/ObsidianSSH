@@ -262,10 +262,16 @@ function initIpc () {
       ))
       : []
     if (!safeFiles.length) return
-    const dragIcon = nativeImage.createFromPath(iconPath).resize({
-      width: 32,
-      height: 32
-    })
+    // startDrag throws on an empty icon; iconPath can be missing in
+    // packaged builds, so fall back to a tiny in-memory image
+    let dragIcon = nativeImage.createFromPath(iconPath)
+    if (dragIcon.isEmpty()) {
+      dragIcon = nativeImage.createFromDataURL(
+        'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
+      )
+    } else {
+      dragIcon = dragIcon.resize({ width: 32, height: 32 })
+    }
     const dragItem = {
       file: safeFiles[0],
       icon: dragIcon
@@ -273,7 +279,11 @@ function initIpc () {
     if (safeFiles.length > 1) {
       dragItem.files = safeFiles
     }
-    event.sender.startDrag(dragItem)
+    try {
+      event.sender.startDrag(dragItem)
+    } catch (err) {
+      console.error('startDrag failed', err)
+    }
   })
 }
 
