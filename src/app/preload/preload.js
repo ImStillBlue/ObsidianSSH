@@ -3,7 +3,6 @@
  */
 
 const { ipcRenderer, contextBridge, webFrame, webUtils } = require('electron')
-const { pathToFileURL } = require('node:url')
 
 contextBridge.exposeInMainWorld(
   'api', {
@@ -26,7 +25,6 @@ contextBridge.exposeInMainWorld(
     startFileDrag: (files) => {
       ipcRenderer.send('start-file-drag', files)
     },
-    pathToFileUrl: (filePath) => pathToFileURL(filePath).href,
     ipcOnEvent: (event, cb) => {
       ipcRenderer.on(event, cb)
     },
