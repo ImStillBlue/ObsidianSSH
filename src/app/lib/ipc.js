@@ -71,8 +71,6 @@ const { watchFile, unwatchFile } = require('./watch-file')
 const lookup = require('../common/lookup')
 const { AIchat, AIchatWithTools, getStreamContent, stopStream } = require('./ai')
 const { iconPath } = require('../common/runtime-constants')
-const fs = require('node:fs')
-const path = require('node:path')
 
 // Security: whitelist of safe environment variables for Linux/Mac/Windows
 const SAFE_ENV_KEYS = [
@@ -254,36 +252,12 @@ function initIpc () {
     return dialog.showSaveDialog(win, ...args)
   })
   ipcMain.on('start-file-drag', (event, files) => {
-    const safeFiles = Array.isArray(files)
-      ? files.filter(filePath => (
-        typeof filePath === 'string' &&
-        path.isAbsolute(filePath) &&
-        fs.existsSync(filePath)
-      ))
-      : []
+    const safeFiles = Array.isArray(files) ? files.filter(Boolean) : []
     if (!safeFiles.length) return
-    // startDrag throws on an empty icon; iconPath can be missing in
-    // packaged builds, so fall back to a tiny in-memory image
-    let dragIcon = nativeImage.createFromPath(iconPath)
-    if (dragIcon.isEmpty()) {
-      dragIcon = nativeImage.createFromDataURL(
-        'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='
-      )
-    } else {
-      dragIcon = dragIcon.resize({ width: 32, height: 32 })
-    }
-    const dragItem = {
-      file: safeFiles[0],
-      icon: dragIcon
-    }
-    if (safeFiles.length > 1) {
-      dragItem.files = safeFiles
-    }
-    try {
-      event.sender.startDrag(dragItem)
-    } catch (err) {
-      console.error('startDrag failed', err)
-    }
+    event.sender.startDrag({
+      files: safeFiles,
+      icon: nativeImage.createFromPath(iconPath)
+    })
   })
 }
 

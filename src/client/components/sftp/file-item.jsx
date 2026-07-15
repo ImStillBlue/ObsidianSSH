@@ -31,11 +31,6 @@ import sorter from '../../common/index-sorter'
 import { getFolderFromFilePath, getLocalFileInfo } from './file-read'
 import { readClipboard, copy as copyToClipboard, hasFileInClipboardText } from '../../common/clipboard'
 import { getDropFileList } from '../../common/file-drop-utils'
-import {
-  getPreparedRemoteDrag,
-  getRemoteDragCacheKey,
-  prepareRemoteNativeDrag
-} from '../../common/native-file-drag'
 import time from '../../common/time'
 import { filesize } from 'filesize'
 import { createTransferProps } from './transfer-common'
@@ -81,8 +76,6 @@ export default class FileSection extends React.Component {
 
   componentWillUnmount () {
     filesRef.remove(this.id)
-    this.removeDragOutListener()
-    this.dragPreparationMessage?.destroy()
     clearTimeout(this.timer)
     this.timer = null
     this.domRef = null
@@ -198,131 +191,43 @@ export default class FileSection extends React.Component {
     this.props.addTransferList(res)
   }
 
-  downloadRemoteItemForDrag = (file, localPath, onProgress) => {
+  downloadRemoteFileForDrag = (file, localPath) => {
     const remotePath = resolve(file.path, file.name)
     return new Promise((resolve, reject) => {
+      let transport
+      const done = () => {
+        transport?.destroy()
+        resolve(localPath)
+      }
+      const fail = error => {
+        transport?.destroy()
+        reject(error)
+      }
       this.props.sftp.download({
         remotePath,
         localPath,
-        isDirectory: !!file.isDirectory,
+        isDirectory: false,
         options: { mode: file.mode },
-        onData: progress => onProgress?.({ file, progress }),
-        onError: reject,
-        onEnd: () => resolve(localPath)
-      }).catch(reject)
+        onData: () => {},
+        onError: fail,
+        onEnd: done
+      }).then(instance => { transport = instance }).catch(fail)
     })
   }
 
-  stageRemoteItemsForDrag = async (files, onProgress) => {
+  startRemoteFileDrag = async files => {
+    const regularFiles = files.filter(file => !file.isDirectory)
+    if (!regularFiles.length) {
+      return message.warning('Drag-out currently supports files, not folders')
+    }
     const stagingDir = window.pre.resolve(window.pre.tempDir, `electerm-drag-${generate()}`)
     await window.fs.mkdir(stagingDir, { recursive: true })
-    try {
-      const paths = []
-      for (const file of files) {
-        const localPath = window.pre.resolve(stagingDir, sanitizeFilename(file.name))
-        paths.push(await this.downloadRemoteItemForDrag(file, localPath, onProgress))
-      }
-      return { paths, cleanupRoot: stagingDir }
-    } catch (error) {
-      window.fs.rmrf(stagingDir).catch(console.log)
-      throw error
+    const localFiles = []
+    for (const file of regularFiles) {
+      const localPath = window.pre.resolve(stagingDir, sanitizeFilename(file.name))
+      localFiles.push(await this.downloadRemoteFileForDrag(file, localPath))
     }
-  }
-
-  prepareRemoteFileDrag = files => {
-    const key = getRemoteDragCacheKey(files, this.props.tab?.id)
-    return prepareRemoteNativeDrag(
-      key,
-      onProgress => this.stageRemoteItemsForDrag(files, onProgress)
-    )
-  }
-
-  getDragFiles = () => {
-    const selected = this.isSelected(this.props.file.id)
-    return selected
-      ? this.props.getSelectedFiles()
-      : [this.props.file]
-  }
-
-  showDragPreparationProgress = ({ file, progress }) => {
-    const transferred = Number(progress?.transferred ?? progress)
-    const total = Number(progress?.total)
-    const amount = Number.isFinite(transferred)
-      ? total > 0
-        ? `${filesize(transferred)} / ${filesize(total)}`
-        : filesize(transferred)
-      : ''
-    this.dragPreparationMessage = message.info({
-      key: 'native-drag-preparation',
-      content: `Preparing ${file.name}${amount ? ` — ${amount}` : '…'}`,
-      duration: 0
-    })
-  }
-
-  // Download remote files to a temp dir so a later drag can hand real local
-  // paths to the OS. Shows progress and tells the user to drag again when
-  // the copies are ready — dataTransfer payloads can only be set at
-  // dragstart, not mid-drag.
-  startDragOutPreparation = files => {
-    const preparation = this.prepareRemoteFileDrag(files)
-    if (preparation.status !== 'pending') {
-      return preparation
-    }
-    this.dragPreparationMessage?.destroy()
-    this.dragPreparationMessage = message.info({
-      key: 'native-drag-preparation',
-      content: `Preparing ${files.length > 1 ? `${files.length} items` : files[0].name}…`,
-      duration: 0
-    })
-    const unsubscribeProgress = preparation.subscribeProgress(
-      this.showDragPreparationProgress
-    )
-    preparation.promise
-      .then(() => {
-        unsubscribeProgress()
-        this.dragPreparationMessage?.destroy()
-        this.dragPreparationMessage = null
-        message.success('Ready — drag out again to download')
-      })
-      .catch(error => {
-        unsubscribeProgress()
-        this.dragPreparationMessage?.destroy()
-        this.dragPreparationMessage = null
-        window.store.onError(error)
-      })
-    return preparation
-  }
-
-  // Track dragenter/dragleave depth for the whole document: when it drops
-  // back to zero the drag has crossed the window edge. Only then start
-  // staging temp copies, so purely internal drags never trigger a hidden
-  // duplicate download
-  onDragOutEnter = () => {
-    this.dragOutDepth++
-  }
-
-  onDragOutLeave = () => {
-    this.dragOutDepth--
-    if (this.dragOutDepth > 0) {
-      return
-    }
-    this.removeDragOutListener()
-    if (this.pendingDragOutFiles) {
-      this.startDragOutPreparation(this.pendingDragOutFiles)
-    }
-  }
-
-  addDragOutListener = () => {
-    // dragstart is followed by a dragenter on the source element, which
-    // pairs with the final dragleave when the pointer exits the window
-    this.dragOutDepth = 0
-    document.addEventListener('dragenter', this.onDragOutEnter)
-    document.addEventListener('dragleave', this.onDragOutLeave)
-  }
-
-  removeDragOutListener = () => {
-    document.removeEventListener('dragenter', this.onDragOutEnter)
-    document.removeEventListener('dragleave', this.onDragOutLeave)
+    window.api.startFileDrag(localFiles)
   }
 
   onDragStart = e => {
@@ -333,57 +238,37 @@ export default class FileSection extends React.Component {
       ? onDragCls + ' ' + onMultiDragCls
       : onDragCls
     addClass(this.domRef.current, cls)
-    const dragFiles = this.getDragFiles()
     const transferProps = createTransferProps(this.props)
-    const filesWithMeta = dragFiles.map(file => ({
-      ...file,
-      host: this.props.tab?.host,
-      tabType: this.props.tab?.type,
-      tabId: transferProps.tabId,
-      title: transferProps.title
-    }))
-    // internal drags (pane to pane, into terminals) always ride the normal
-    // HTML5 drag; native drag-out data is layered on top below
-    e.dataTransfer.setData('fromFile', JSON.stringify(filesWithMeta))
-    if (window.et.isWebApp) {
-      return
-    }
-    if (this.props.file.type === typeMap.local) {
-      if (e.altKey) {
-        const paths = dragFiles.map(file => resolve(file.path, file.name))
-        this.startElectronNativeDrag(e, paths)
-      }
-      return
-    }
-    const cacheKey = getRemoteDragCacheKey(dragFiles, this.props.tab?.id)
-    const prepared = getPreparedRemoteDrag(cacheKey)
-    if (prepared) {
-      this.startElectronNativeDrag(e, prepared.paths)
-      return
-    }
-    if (e.altKey) {
+    const selected = this.isSelected(this.props.file.id)
+    const dragFiles = selected
+      ? this.props.getSelectedFiles()
+      : [this.props.file]
+    if (
+      e.altKey &&
+      this.props.file.type === typeMap.remote &&
+      !window.et.isWebApp
+    ) {
       e.preventDefault()
-      this.onDragEnd()
-      this.startDragOutPreparation(dragFiles)
+      this.startRemoteFileDrag(dragFiles).catch(window.store.onError)
       return
     }
-    this.pendingDragOutFiles = dragFiles
-    this.addDragOutListener()
+    const filesWithMeta = dragFiles.map(file => {
+      return {
+        ...file,
+        host: this.props.tab?.host,
+        tabType: this.props.tab?.type,
+        tabId: transferProps.tabId,
+        title: transferProps.title
+      }
+    })
+    e.dataTransfer.setData('fromFile', JSON.stringify(filesWithMeta))
   }
 
-  // Hand the drag over to Electron's webContents.startDrag — the documented
-  // way to drag real files out to the OS (renderer dataTransfer types are
-  // sanitized by Chromium and never reach external apps). The HTML5 drag is
-  // cancelled, so run the dragend cleanup ourselves — it will never fire
-  startElectronNativeDrag = (e, paths) => {
-    e.preventDefault()
-    this.onDragEnd()
-    window.api.startFileDrag(paths)
+  getDropFileList = data => {
+    return getDropFileList(data)
   }
 
   onDragEnd = () => {
-    this.pendingDragOutFiles = null
-    this.removeDragOutListener()
     this.props.modifier({
       onDrag: false
     })
@@ -395,14 +280,13 @@ export default class FileSection extends React.Component {
 
   onDrop = async e => {
     e.preventDefault()
-    const fromFileManager = !e.dataTransfer.getData('fromFile') &&
-      !!e.dataTransfer.files?.length
-    const fromFiles = getDropFileList(e.dataTransfer)
+    const fromFileManager = !!e?.dataTransfer?.files?.length
     let { target } = e
     if (!target) {
       return
     }
-    if (!fromFiles?.length) {
+    const fromFiles = this.getDropFileList(e.dataTransfer)
+    if (!fromFiles) {
       return
     }
 
@@ -1535,12 +1419,11 @@ export default class FileSection extends React.Component {
       className,
       draggable: draggable && !isParent,
       onDragStart: onDragStart || this.onDragStart,
-      onDragEnd: this.onDragEnd,
       'data-id': id,
       id: this.id,
       'data-type': type,
       title: file.type === typeMap.remote && !window.et.isWebApp
-        ? `${file.name}\nDrag out of the window to download it with your file manager`
+        ? `${file.name}\nAlt-drag to copy to your desktop or file manager`
         : file.name
     }
     return (
